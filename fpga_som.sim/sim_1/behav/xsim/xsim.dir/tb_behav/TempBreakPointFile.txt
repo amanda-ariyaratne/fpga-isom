@@ -1,0 +1,4 @@
+Breakpoint File Version 1.0
+42,true,"/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/imports/new/som.v"
+48,true,"/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/imports/new/som.v"
+44,true,"/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/imports/new/som.v"

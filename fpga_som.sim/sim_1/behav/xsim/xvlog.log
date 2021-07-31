@@ -1,0 +1,4 @@
+INFO: [VRFC 10-2263] Analyzing Verilog file "/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/imports/new/som.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module som
+INFO: [VRFC 10-2263] Analyzing Verilog file "/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/som_sim_tb.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module som_sim_tb
