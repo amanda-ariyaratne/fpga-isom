@@ -3,20 +3,21 @@
 
 module som
     #(
-        parameter DIM = 3,
-        parameter LOG2_DIM = 2,    // log2(DIM)
+        parameter DIM = 10,
+        parameter LOG2_DIM = 4,    // log2(DIM)
+        parameter DIGIT_DIM = 2,
         parameter signed k_value = 1,
-        parameter ROWS = 3,
-        parameter LOG2_ROWS = 2,   // log2(ROWS)
-        parameter COLS = 3,
-        parameter LOG2_COLS = 2,   // log2(COLS)
-        parameter TRAIN_ROWS = 5,
-        parameter LOG2_TRAIN_ROWS = 3, // log2(TRAIN_ROWS)
-        parameter TEST_ROWS = 3,
-        parameter LOG2_TEST_ROWS = 2,  // log2(TEST_ROWS)
-        parameter NUM_CLASSES = 2+1,
+        parameter ROWS = 5,
+        parameter LOG2_ROWS = 3,   // log2(ROWS)
+        parameter COLS = 5,
+        parameter LOG2_COLS = 3,   // log2(COLS)
+        parameter TRAIN_ROWS = 75,
+        parameter LOG2_TRAIN_ROWS = 7, // log2(TRAIN_ROWS)
+        parameter TEST_ROWS = 150,
+        parameter LOG2_TEST_ROWS = 8,  // log2(TEST_ROWS)
+        parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 1+1, // log2(NUM_CLASSES)  
-        parameter INITIAL_NB_RADIUS = 1,
+        parameter INITIAL_NB_RADIUS = 2,
         parameter LOG2_NB_RADIUS = 1
     )
     (
@@ -39,27 +40,33 @@ module som
     ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     
     
-    reg signed [LOG2_DIM-1:0] weights [ROWS-1:0][COLS-1:0][DIM-1:0];
+    reg signed [DIGIT_DIM-1:0] weights [ROWS-1:0][COLS-1:0][DIM-1:0];
     reg [LOG2_ROWS:0] i = 0;
     reg [LOG2_COLS:0] j = 0;
     reg signed [LOG2_DIM:0] k = DIM-1;
+    reg signed [LOG2_DIM:0] kw = DIM-1;
+    reg signed [LOG2_DIM:0] k1 = DIM-1;
+    reg signed [LOG2_DIM:0] k2 = DIM-1;
+    
     
     integer weights_file;
     integer trains_file;
     integer test_file;
-    
     reg [(DIM*2)-1:0] rand_v;
+    integer eof_weight;
+    
     initial
     begin
         weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/weights.data","r");
-
-        while (! ($feof(weights_file)))
+        eof_weight = 0;
+        while (!eof_weight)
         begin
-            $fscanf(weights_file, "%b\n",rand_v);
+            eof_weight = $fscanf(weights_file, "%b\n",rand_v);
             
-            for(k=DIM-1;k>=0;k=k-1)
+            for(kw=DIM-1;kw>=0;kw=kw-1)
             begin
-                weights[i][j][k] = rand_v[(2*k)+1-:2];
+                $display("wwww", kw);
+                weights[i][j][kw] = rand_v[(2*kw)+1-:2];
             end
             
             j = j + 1;
@@ -74,21 +81,24 @@ module som
     
     ///////////////////////////////////////////////////////*******************Read train vectors***********/////////////////////////////////////
 
-    reg signed [LOG2_DIM-1:0] trainX [TRAIN_ROWS-1:0][DIM-1:0];
+    reg signed [DIGIT_DIM-1:0] trainX [TRAIN_ROWS-1:0][DIM-1:0];
     reg [LOG2_NUM_CLASSES-1:0] trainY [TRAIN_ROWS-1:0];
     reg signed [LOG2_TRAIN_ROWS:0] t1 = 0;
-    reg [(DIM*2)+LOG2_NUM_CLASSES-1:0] temp_train_v;
+    reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_train_v;
+    integer eof_train;
+    
     initial
     begin
         trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/train.data","r");
-        
-        while (! ($feof(trains_file)))
-        begin
-            $fscanf(trains_file, "%b\n",temp_train_v);
+        eof_train=0;
+        while (eof_train!=1)   
+            begin        
+            eof_train = $fscanf(trains_file, "%b\n",temp_train_v);
             
-            for(k=DIM-1;k>=0;k=k-1)
+            for(k1=DIM-1;k1>=0;k1=k1-1)
             begin
-                trainX[t1][k] = temp_train_v[(2*k)+1+LOG2_NUM_CLASSES-:2];
+                $display("k1 ", k1);                
+                trainX[t1][k1] = temp_train_v[(DIGIT_DIM*k1)+1+LOG2_NUM_CLASSES-:DIGIT_DIM];
             end
             trainY[t1] = temp_train_v[LOG2_NUM_CLASSES-1:0];
             t1 = t1 + 1;
@@ -98,21 +108,23 @@ module som
 
     ///////////////////////////////////////////////////////*******************Read test vectors***********/////////////////////////////////////
     
-    reg signed [LOG2_DIM-1:0] testX [TEST_ROWS-1:0][DIM-1:0];
+    reg signed [DIGIT_DIM-1:0] testX [TEST_ROWS-1:0][DIM-1:0];
     reg [LOG2_NUM_CLASSES-1:0] testY [TEST_ROWS-1:0];
     reg signed [LOG2_TEST_ROWS:0] t2 = 0;
-    reg [(DIM*2)+LOG2_NUM_CLASSES-1:0] temp_test_v;
+    reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_test_v;
+    integer eof_test;
+    
     initial
     begin
         test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/test.data","r");
-        
-        while (! ($feof(test_file)))
+        eof_test = 0;
+        while (!eof_test)
         begin
-            $fscanf(test_file, "%b\n",temp_test_v);
-
-            for(k=DIM-1;k>=0;k=k-1)
+            eof_test = $fscanf(test_file, "%b\n",temp_test_v);
+            for(k2=DIM-1;k2>=0;k2=k2-1)
             begin
-                testX[t2][k] = temp_test_v[(2*k)+1+LOG2_NUM_CLASSES-:2];
+                $display("k2 ", k2);
+                testX[t2][k2] = temp_test_v[(DIGIT_DIM*k2)+1+LOG2_NUM_CLASSES-:DIGIT_DIM];
             end
                 
                 
@@ -168,7 +180,8 @@ module som
                 classify_weights_en = 1;
                 
             if (t1<TRAIN_ROWS-1)
-            begin                
+            begin              
+                $display("Started...");  
                 t1 = t1 + 1;
                 next_x_en = 0;
                 dist_enable = 1;

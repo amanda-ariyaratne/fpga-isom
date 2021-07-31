@@ -1,6 +1,6 @@
 webtalk_init -webtalk_dir /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/som_sim_tb_behav/webtalk/
 webtalk_register_client -client project
-webtalk_add_data -client project -key date_generated -value "Fri Jul 30 21:41:01 2021" -context "software_version_and_target_device"
+webtalk_add_data -client project -key date_generated -value "Sat Jul 31 15:25:21 2021" -context "software_version_and_target_device"
 webtalk_add_data -client project -key product_version -value "XSIM v2020.2 (64-bit)" -context "software_version_and_target_device"
 webtalk_add_data -client project -key build_version -value "3064766" -context "software_version_and_target_device"
 webtalk_add_data -client project -key os_platform -value "LIN64" -context "software_version_and_target_device"
@@ -14,7 +14,7 @@ webtalk_add_data -client project -key target_package -value "not_applicable" -co
 webtalk_add_data -client project -key target_speed -value "not_applicable" -context "software_version_and_target_device"
 webtalk_add_data -client project -key random_id -value "31fc1e5c-146b-4da5-a61c-ca21c674ebbd" -context "software_version_and_target_device"
 webtalk_add_data -client project -key project_id -value "c97a37bdf6864dd9951b028e3f1247ee" -context "software_version_and_target_device"
-webtalk_add_data -client project -key project_iteration -value "61" -context "software_version_and_target_device"
+webtalk_add_data -client project -key project_iteration -value "93" -context "software_version_and_target_device"
 webtalk_add_data -client project -key os_name -value "Pop" -context "user_environment"
 webtalk_add_data -client project -key os_release -value "Pop!_OS 20.04 LTS" -context "user_environment"
 webtalk_add_data -client project -key cpu_name -value "AMD Ryzen 7 1700 Eight-Core Processor" -context "user_environment"
@@ -26,7 +26,7 @@ webtalk_add_data -client xsim -key Command -value "xsim" -context "xsim\\command
 webtalk_add_data -client xsim -key trace_waveform -value "true" -context "xsim\\usage"
 webtalk_add_data -client xsim -key runtime -value "1 us" -context "xsim\\usage"
 webtalk_add_data -client xsim -key iteration -value "1" -context "xsim\\usage"
-webtalk_add_data -client xsim -key Simulation_Time -value "0.03_sec" -context "xsim\\usage"
-webtalk_add_data -client xsim -key Simulation_Memory -value "115368_KB" -context "xsim\\usage"
-webtalk_transmit -clientid 3409225423 -regid "" -xml /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/som_sim_tb_behav/webtalk/usage_statistics_ext_xsim.xml -html /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/som_sim_tb_behav/webtalk/usage_statistics_ext_xsim.html -wdm /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/som_sim_tb_behav/webtalk/usage_statistics_ext_xsim.wdm -intro "<H3>XSIM Usage Report</H3><BR>"
+webtalk_add_data -client xsim -key Simulation_Time -value "0.05_sec" -context "xsim\\usage"
+webtalk_add_data -client xsim -key Simulation_Memory -value "115372_KB" -context "xsim\\usage"
+webtalk_transmit -clientid 3217664748 -regid "" -xml /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/som_sim_tb_behav/webtalk/usage_statistics_ext_xsim.xml -html /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/som_sim_tb_behav/webtalk/usage_statistics_ext_xsim.html -wdm /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/som_sim_tb_behav/webtalk/usage_statistics_ext_xsim.wdm -intro "<H3>XSIM Usage Report</H3><BR>"
 webtalk_terminate

@@ -4,8 +4,8 @@ Nov 18 2020
 09:20:35
 /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/glbl.v,1605673889,verilog,,,,glbl,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/som2_tb.v,1627631587,verilog,,,,som2_tb,,,,,,,,
-/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/som_sim_tb.v,1627648425,verilog,,,,som_sim_tb,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/som_sim_tb.v,1627724926,verilog,,,,som_sim_tb,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/som_tb.v,1626593212,verilog,,,,som_tb,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/tb.v,1626596066,verilog,,,,tb,,,,,,,,
-/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/imports/new/som.v,1627661058,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/som_sim_tb.v,,som,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/imports/new/som.v,1627723870,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/som_sim_tb.v,,som,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/som_tb2.v,1626609753,verilog,,,,som_tb2,,,,,,,,
