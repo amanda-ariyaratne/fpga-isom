@@ -1,45 +1,39 @@
 `timescale 1ns / 1ps
 
 
-module som
+module isom
     #(
-//        parameter DIM = 100,
-//        parameter LOG2_DIM = 7,    // log2(DIM)
-//        parameter DIGIT_DIM = 2,
-//        parameter signed k_value = 1,
-//        parameter ROWS = 10,
-//        parameter LOG2_ROWS = 4,   // log2(ROWS)
-//        parameter COLS = 10,
-//        parameter LOG2_COLS = 4,   // log2(COLS)
-        
-        parameter DIM = 10,
-        parameter LOG2_DIM = 4,    // log2(DIM)
+        parameter DIM = 1000,
+        parameter LOG2_DIM = 11,    // log2(DIM)
         parameter DIGIT_DIM = 2,
         parameter signed k_value = 1,
-        parameter ROWS = 5,
-        parameter LOG2_ROWS = 3,   // log2(ROWS)
-        parameter COLS = 5,
-        parameter LOG2_COLS = 3,
         
-//        parameter DIM = 10,
-//        parameter LOG2_DIM = 4,    // log2(DIM)
-//        parameter DIGIT_DIM = 2,
-//        parameter signed k_value = 1,
-//        parameter ROWS = 5,
-//        parameter LOG2_ROWS = 3,   // log2(ROWS)
-//        parameter COLS = 5,
-//        parameter LOG2_COLS = 3,
-        
+        parameter ROWS = 10,
+        parameter LOG2_ROWS = 4,   // log2(ROWS)
+        parameter COLS = 10,
+        parameter LOG2_COLS = 4,     
         
         parameter TRAIN_ROWS = 75,
         parameter LOG2_TRAIN_ROWS = 7, // log2(TRAIN_ROWS)
         parameter TEST_ROWS = 150,
         parameter LOG2_TEST_ROWS = 8,  // log2(TEST_ROWS)
+        
         parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 1+1, // log2(NUM_CLASSES)  
-        parameter INITIAL_NB_RADIUS = 2,
-        parameter LOG2_NB_RADIUS = 1,
-        parameter TOTAL_ITERATIONS=1
+        
+        parameter INITIAL_NB_RADIUS = 4,
+        parameter NB_RADIUS_STEP = 1,
+        parameter LOG2_NB_RADIUS = 3,
+        
+        parameter TOTAL_ITERATIONS=12,
+        parameter ITERATION_STEP = 3,
+        parameter LOG2_TOT_ITERATIONS = 4,
+        
+        parameter INITIAL_UPDATE_PROB = 800,
+        parameter UPDATE_PROB_STEP = 200,
+        parameter LOG2_UPDATE_PROB = 10,
+        
+        parameter STEP = 4
     )
     (
         input wire clk,
@@ -88,7 +82,6 @@ module som
             for(kw=DIM-1;kw>=0;kw=kw-1)
             begin
                 weights[i][j][kw] = rand_v[(2*kw)+1-:2];
-                $display("kww ", weights[i][j][kw]);    
             end
             
             j = j + 1;
@@ -119,10 +112,7 @@ module som
             
             for(k1=DIM-1;k1>=0;k1=k1-1)
             begin
-//                $display("k1 ", k1);                
                 trainX[t1][k1] = temp_train_v[(DIGIT_DIM*k1)+1+LOG2_NUM_CLASSES-:DIGIT_DIM];
-                $display("k11 ", trainX[t1][k1]);
-                $display("k11 ", temp_train_v[(DIGIT_DIM*k1)+1+LOG2_NUM_CLASSES-:DIGIT_DIM]);
             end
             trainY[t1] = temp_train_v[LOG2_NUM_CLASSES-1:0];
             t1 = t1 + 1;
@@ -147,9 +137,7 @@ module som
             eof_test = $fscanf(test_file, "%b\n",temp_test_v);
             for(k2=DIM-1;k2>=0;k2=k2-1)
             begin
-                $display("k2 ", k2);
                 testX[t2][k2] = temp_test_v[(DIGIT_DIM*k2)+1+LOG2_NUM_CLASSES-:DIGIT_DIM];
-                $display("value ", testX[t2][k2]);
             end
                 
             testY[t2] = temp_test_v[LOG2_NUM_CLASSES-1:0];
@@ -180,7 +168,29 @@ module som
         end
         $display("class frequnecy list initialized");
     end
-
+    
+    ///////////////////////////////////////////////////////****************Start LFSR**************/////////////////////////////////////
+    localparam RAND_NUM_BIT_LEN = 10;
+    reg lfsr_en = 1;
+    reg seed_en = 1;
+    wire [DIM*RAND_NUM_BIT_LEN-1:0] random_number_arr;
+    
+    genvar dim_i;
+    
+    generate
+        for(dim_i=0; dim_i < DIM; dim_i=dim_i+1)
+        begin
+            lfsr #(.NUM_BITS(RAND_NUM_BIT_LEN)) lfsr_rand
+            (
+                .i_Clk(clk),
+                .i_Enable(lfsr_en),
+                .i_Seed_DV(seed_en),
+                .i_Seed_Data(dim_i),
+                .o_LFSR_Data(random_number_arr[(dim_i+1)*RAND_NUM_BIT_LEN: dim_i*RAND_NUM_BIT_LEN])
+            );
+        end
+    endgenerate
+    
     ///////////////////////////////////////////////////////*******************Start Training***********/////////////////////////////////////
     
     
@@ -196,7 +206,7 @@ module som
     reg [LOG2_DIM-1:0] min_distance_next_index = 0;    
     reg [LOG2_COLS:0] bmu [1:0]; // since COL==ROW any of LOG2_ can be used here
     
-    integer iteration = 0;
+    reg signed [LOG2_TOT_ITERATIONS:0] iteration = 0;
     
     always @(posedge clk)
     begin
@@ -223,13 +233,14 @@ module som
         begin
             if (init_classification_en)
             begin 
+                lfsr_en = 0; // turn off the random number generator
                 classify_weights_en = 1;
                 $display("Classify weights ", t1);  
             end
                 
             if (t1<TRAIN_ROWS-1)
             begin              
-                $display("Row ",t1);  
+                // $display("Row ",t1);  
                 t1 = t1 + 1;
                 dist_enable = 1;
             end
@@ -254,6 +265,8 @@ module som
     end
     
     //////////////////******************************Find BMU******************************/////////////////////////////////
+    
+    reg [LOG2_DIM-1:0] iii = 0;   
     
     always @(posedge clk)
     begin
@@ -300,14 +313,13 @@ module som
             // if there are more than one bmu
             if (min_distance_next_index > 1)
             begin
-                $display("more than one bmu ", min_distance_next_index);
-                i = 0;
+                iii = 0;
                 max_l0_norm = 0;
-                for(i=0;i<min_distance_next_index; i=i+1)
+                for(iii=0;iii<min_distance_next_index; iii=iii+1)
                 begin
-                    idx_i = minimum_distance_indices[i][1];
-                    idx_j = minimum_distance_indices[i][0];
-                    
+                    idx_i = minimum_distance_indices[iii][1];
+                    idx_j = minimum_distance_indices[iii][0];
+                    // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
                     if (l0_norms[idx_i][idx_j] > max_l0_norm)
                     begin
                         max_l0_norm = l0_norms[idx_i][idx_j];
@@ -339,24 +351,50 @@ module som
     reg signed [LOG2_ROWS+1:0] bmu_x;
     reg signed [LOG2_COLS+1:0] bmu_y;
     reg signed [LOG2_NB_RADIUS+1:0] man_dist; /////////// not sure
-    reg signed [LOG2_NB_RADIUS+1:0] nb_radius;
-    integer digit;
+    reg signed [LOG2_NB_RADIUS+1:0] nb_radius = INITIAL_NB_RADIUS;
+    reg signed [LOG2_UPDATE_PROB+1:0] update_prob = INITIAL_UPDATE_PROB;
+    
+     
+    always @(posedge clk)
+    begin
+        if (iteration <= ITERATION_STEP*1)
+        begin
+            nb_radius =  NB_RADIUS_STEP*4;
+            update_prob = UPDATE_PROB_STEP*4;
+        end
+        else if (iteration <= ITERATION_STEP*2)
+        begin
+            nb_radius =  NB_RADIUS_STEP*3;
+            update_prob = UPDATE_PROB_STEP*3;
+        end
+        else if (iteration <= ITERATION_STEP*3)
+        begin
+            nb_radius =  NB_RADIUS_STEP*2;
+            update_prob = UPDATE_PROB_STEP*2;
+        end
+        else if (iteration <= ITERATION_STEP*4)
+        begin
+            nb_radius =  NB_RADIUS_STEP;
+            update_prob = UPDATE_PROB_STEP;
+        end
+    end
     
     always @(posedge clk)
     begin    
         if (init_neigh_search_en)
         begin
             bmu_x = bmu[1]; bmu_y = bmu[0];    
-            bmu_i = (bmu_x-LOG2_NB_RADIUS) < 0 ? 0 : (bmu_x-LOG2_NB_RADIUS);
-            bmu_j = (bmu_y-LOG2_NB_RADIUS) < 0 ? 0 : (bmu_y-LOG2_NB_RADIUS);
-            nb_radius = INITIAL_NB_RADIUS;
+            bmu_i = (bmu_x-nb_radius) < 0 ? 0 : (bmu_x-nb_radius);
+            bmu_j = (bmu_y-nb_radius) < 0 ? 0 : (bmu_y-nb_radius);
             init_neigh_search_en=0;
             nb_search_en=1;
         end
     end
     
     reg signed [2*DIM:0] temp[DIM-1:0];
+    integer digit;
     
+
     always @(posedge clk)
     begin    
         if (nb_search_en)
@@ -369,14 +407,18 @@ module som
                 // update neighbourhood
                 for (digit=0; digit<DIM; digit=digit+1)
                 begin
-                    temp[digit] = weights[bmu_i][bmu_j][digit] + trainX[t1][digit];
-                    
-                    if (temp[digit]>k_value) 
-                        weights[bmu_i][bmu_j][digit] = k_value;
-                    else if (temp[digit]< -k_value) 
-                        weights[bmu_i][bmu_j][digit] = -k_value;
-                    else 
-                        weights[bmu_i][bmu_j][digit] = temp[digit];
+                    if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] > update_prob)
+                    begin
+                        seed_en = 0;
+                        temp[digit] = weights[bmu_i][bmu_j][digit] + trainX[t1][digit];
+                        
+                        if (temp[digit]>k_value) 
+                            weights[bmu_i][bmu_j][digit] = k_value;
+                        else if (temp[digit]< -k_value) 
+                            weights[bmu_i][bmu_j][digit] = -k_value;
+                        else 
+                            weights[bmu_i][bmu_j][digit] = temp[digit];
+                    end
                 end
             end
             
@@ -459,7 +501,9 @@ module som
     end
     
     reg [LOG2_TEST_ROWS-1:0] correct_predictions = 0; // should take log2 of test rows
-    reg [LOG2_NUM_CLASSES-1:0] predictionY[TEST_ROWS-1:0];
+    reg [LOG2_NUM_CLASSES:0] predictionY[TEST_ROWS-1:0];
+    
+    reg [LOG2_TEST_ROWS-1:0] tot_predictions = 0;
     
     always @(posedge clk)
     begin
@@ -508,12 +552,12 @@ module som
             // if there are more than one bmu
             if (min_distance_next_index > 1)
             begin
-                i = 0;
+                iii = 0;
                 max_l0_norm = 0;
-                for(i=0;i<min_distance_next_index; i=i+1)
+                for(iii=0;iii<min_distance_next_index; iii=iii+1)
                 begin
-                    idx_i = minimum_distance_indices[i][1];
-                    idx_j = minimum_distance_indices[i][0];
+                    idx_i = minimum_distance_indices[iii][1];
+                    idx_j = minimum_distance_indices[iii][0];
                     
                     if (l0_norms[idx_i][idx_j] > max_l0_norm)
                     begin
@@ -534,7 +578,8 @@ module som
             begin
                 correct_predictions = correct_predictions + 1;                
             end            
-            predictionY[t2] = class_labels[bmu[1]][bmu[0]];            
+            predictionY[t2] = class_labels[bmu[1]][bmu[0]];     
+            tot_predictions = tot_predictions +1;       
             classify_x_en = 0;
             test_en = 1;
         end        
