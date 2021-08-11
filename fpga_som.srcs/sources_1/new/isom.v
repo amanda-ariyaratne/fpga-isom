@@ -4,7 +4,7 @@
 module isom
     #(
         parameter DIM = 1000,
-        parameter LOG2_DIM = 11,    // log2(DIM)
+        parameter LOG2_DIM = 10,    // log2(DIM)
         parameter DIGIT_DIM = 2,
         parameter signed k_value = 1,
         
@@ -25,12 +25,12 @@ module isom
         parameter NB_RADIUS_STEP = 1,
         parameter LOG2_NB_RADIUS = 3,
         
-        parameter TOTAL_ITERATIONS=12,
-        parameter ITERATION_STEP = 3,
-        parameter LOG2_TOT_ITERATIONS = 4,
+        parameter TOTAL_ITERATIONS=4,
+        parameter ITERATION_STEP = 1,
+        parameter LOG2_TOT_ITERATIONS = 5,
         
-        parameter INITIAL_UPDATE_PROB = 800,
-        parameter UPDATE_PROB_STEP = 200,
+        parameter INITIAL_UPDATE_PROB = 900,
+        parameter UPDATE_PROB_STEP = 240,
         parameter LOG2_UPDATE_PROB = 10,
         
         parameter STEP = 4
@@ -42,16 +42,17 @@ module isom
 
     ///////////////////////////////////////////////////////*******************Declare enables***********/////////////////////////////////////
     
-    reg next_iteration_en=0;
-    reg dist_enable = 0;
-    reg init_neigh_search_en=0;  
-    reg nb_search_en=0;
-    reg next_x_en = 0;
-    reg test_en = 0;
-    reg classify_x_en = 0;
-    reg classify_weights_en = 0;
-    reg init_classification_en=0;
-    reg class_label_en=0;
+    reg [1:0] training_en = 0;
+    reg [1:0] next_iteration_en=0;
+    reg [1:0] next_x_en=0;    
+    reg [1:0] dist_enable = 0;
+    reg [1:0] init_neigh_search_en=0;  
+    reg [1:0] nb_search_en=0;
+    reg [1:0] test_en = 0;
+    reg [1:0] classify_x_en = 0;
+    reg [1:0] classify_weights_en = 0;
+    reg [1:0] init_classification_en=0;
+    reg [1:0] class_label_en=0;
     
     ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     
@@ -64,7 +65,6 @@ module isom
     reg signed [LOG2_DIM:0] k1 = DIM-1;
     reg signed [LOG2_DIM:0] k2 = DIM-1;
     
-    
     integer weights_file;
     integer trains_file;
     integer test_file;
@@ -73,7 +73,7 @@ module isom
     
     initial
     begin
-        weights_file = $fopen("/home/mad/Documents/fpga-isom/weights.data","r");
+        weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/weights.data","r");
 //        eof_weight = 0;
         while (!$feof(weights_file))
         begin
@@ -104,7 +104,7 @@ module isom
     
     initial
     begin
-        trains_file = $fopen("/home/mad/Documents/fpga-isom/train.data","r");
+        trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/train.data","r");
 //        eof_train=0;
         while (!$feof(trains_file))
             begin        
@@ -118,6 +118,7 @@ module isom
             t1 = t1 + 1;
         end
         $fclose(trains_file);
+        training_en = 1;
     end
 
     ///////////////////////////////////////////////////////*******************Read test vectors***********/////////////////////////////////////
@@ -130,7 +131,7 @@ module isom
     
     initial
     begin
-        test_file = $fopen("/home/mad/Documents/fpga-isom/test.data","r");
+        test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/test.data","r");
 //        eof_test = 0;
         while (!$feof(test_file))
         begin
@@ -143,8 +144,7 @@ module isom
             testY[t2] = temp_test_v[LOG2_NUM_CLASSES-1:0];
             t2 = t2 + 1;
         end
-        $fclose(test_file);        
-        next_iteration_en = 1;
+        $fclose(test_file);  
     end
     
     ////////////////////*****************************Initialize frequenct list*************//////////////////////////////
@@ -178,15 +178,15 @@ module isom
     genvar dim_i;
     
     generate
-        for(dim_i=0; dim_i < DIM; dim_i=dim_i+1)
+        for(dim_i=0; dim_i < DIM-1; dim_i=dim_i+1)
         begin
             lfsr #(.NUM_BITS(RAND_NUM_BIT_LEN)) lfsr_rand
             (
                 .i_Clk(clk),
                 .i_Enable(lfsr_en),
                 .i_Seed_DV(seed_en),
-                .i_Seed_Data(dim_i),
-                .o_LFSR_Data(random_number_arr[(dim_i+1)*RAND_NUM_BIT_LEN: dim_i*RAND_NUM_BIT_LEN])
+                .i_Seed_Data(dim_i[RAND_NUM_BIT_LEN-1:0]),
+                .o_LFSR_Data(random_number_arr[((dim_i+1)*RAND_NUM_BIT_LEN)-1 : dim_i*RAND_NUM_BIT_LEN])
             );
         end
     endgenerate
@@ -206,23 +206,32 @@ module isom
     reg [LOG2_DIM-1:0] min_distance_next_index = 0;    
     reg [LOG2_COLS:0] bmu [1:0]; // since COL==ROW any of LOG2_ can be used here
     
-    reg signed [LOG2_TOT_ITERATIONS:0] iteration = 0;
+    reg signed [LOG2_TOT_ITERATIONS:0] iteration;
+    
+    always @(posedge clk)
+    begin
+        if (training_en)
+        begin
+            iteration = -1;
+            next_iteration_en = 1;
+            training_en = 0;
+        end
+    end
     
     always @(posedge clk)
     begin
         if (next_iteration_en)
         begin
             t1 = -1; // reset trainset pointer
-            if (iteration<TOTAL_ITERATIONS)
-            begin
+            if (iteration<TOTAL_ITERATIONS) begin
                 iteration = iteration + 1;
                 next_x_en = 1;                
             end
-            else
-            begin
+            else begin
+                next_x_en = 0;
                 init_classification_en = 1; // start classification
-                dist_enable = 1; // start finding distance
             end
+            
             next_iteration_en = 0;            
         end
     end
@@ -230,36 +239,50 @@ module isom
     always @(posedge clk)
     begin
         if (next_x_en)
-        begin
-            if (init_classification_en)
-            begin 
-                lfsr_en = 0; // turn off the random number generator
-                classify_weights_en = 1;
-                $display("Classify weights ", t1);  
-            end
-                
+        begin                
             if (t1<TRAIN_ROWS-1)
             begin              
-                // $display("Row ",t1);  
                 t1 = t1 + 1;
                 dist_enable = 1;
-            end
-            
+            end            
             else
-            begin
-                // off classification
-                if (init_classification_en)
-                begin
-                    init_classification_en = 0;
-                    dist_enable = 0;
-                    class_label_en = 1;
-                end
-                //next iteration
-                else
-                begin       
-                    next_iteration_en = 1; 
-                end    
-            end
+                next_iteration_en = 1;                 
+            next_x_en = 0;
+        end
+    end
+    
+    /////////////////////////////////////******************************Classification logic******************************/////////////////////////////////
+    reg[1:0] classification_en = 0;
+    
+    always @(posedge clk)
+    begin
+        if (init_classification_en)
+        begin
+            lfsr_en = 0; // turn off the random number generator
+            next_x_en = 1;
+            classification_en = 1;
+            init_classification_en = 0;
+        end
+    end
+    
+    always @(posedge clk)
+    begin
+        if (next_x_en && classification_en)
+        begin       
+            if (t1>=0)
+                classify_weights_en = 1;   
+                      
+            if (t1<TRAIN_ROWS-1)
+            begin              
+                t1 = t1 + 1;
+                dist_enable = 1;
+            end            
+            else
+            begin              
+                class_label_en = 1;
+                classification_en = 0;
+            end 
+                         
             next_x_en = 0;
         end
     end
@@ -275,6 +298,8 @@ module isom
             i = 0;
             j = 0;
             k = 0;
+            min_distance_next_index = 0; // reset index
+            min_distance = DIM;
             for (i=0;i<ROWS;i=i+1)
             begin
                 for (j=0;j<COLS;j=j+1)
@@ -293,15 +318,13 @@ module isom
                     l0_norms[i][j] = non_zero_count;
                     
                     // get minimum distance index list
-                    if (min_distance == hamming_distance)
-                    begin
+                    if (min_distance == hamming_distance) begin
                         minimum_distance_indices[min_distance_next_index][1] = i;
                         minimum_distance_indices[min_distance_next_index][0] = j;
                         min_distance_next_index = min_distance_next_index + 1;
                     end
                     
-                    if (min_distance>hamming_distance)
-                    begin
+                    if (min_distance>hamming_distance) begin
                         min_distance = hamming_distance;
                         minimum_distance_indices[0][1] = i;
                         minimum_distance_indices[0][0] = j;                        
@@ -311,17 +334,14 @@ module isom
             end // i
             
             // if there are more than one bmu
-            if (min_distance_next_index > 1)
-            begin
+            if (min_distance_next_index > 1) begin
                 iii = 0;
                 max_l0_norm = 0;
-                for(iii=0;iii<min_distance_next_index; iii=iii+1)
-                begin
+                for(iii=0;iii<min_distance_next_index; iii=iii+1) begin
                     idx_i = minimum_distance_indices[iii][1];
                     idx_j = minimum_distance_indices[iii][0];
                     // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
-                    if (l0_norms[idx_i][idx_j] > max_l0_norm)
-                    begin
+                    if (l0_norms[idx_i][idx_j] > max_l0_norm) begin
                         max_l0_norm = l0_norms[idx_i][idx_j];
                         bmu[1] = idx_i;
                         bmu[0] = idx_j;
@@ -329,15 +349,14 @@ module isom
                 end
             end
             
-            else // only one minimum distance node is there
-            begin
+            
+            else begin // only one minimum distance node is there 
                 bmu[1] = minimum_distance_indices[0][1];
                 bmu[0] = minimum_distance_indices[0][0];
             end
             dist_enable = 0;
             
-            
-            if (!init_classification_en)
+            if (!classification_en)
                 init_neigh_search_en = 1; // find neighbours
             else
                 next_x_en = 1; // classify node
@@ -353,38 +372,25 @@ module isom
     reg signed [LOG2_NB_RADIUS+1:0] man_dist; /////////// not sure
     reg signed [LOG2_NB_RADIUS+1:0] nb_radius = INITIAL_NB_RADIUS;
     reg signed [LOG2_UPDATE_PROB+1:0] update_prob = INITIAL_UPDATE_PROB;
-    
+    integer signed step_i;
      
     always @(posedge clk)
     begin
-        if (iteration <= ITERATION_STEP*1)
+        for (step_i=1; step_i<=STEP;step_i = step_i+1)
         begin
-            nb_radius =  NB_RADIUS_STEP*4;
-            update_prob = UPDATE_PROB_STEP*4;
-        end
-        else if (iteration <= ITERATION_STEP*2)
-        begin
-            nb_radius =  NB_RADIUS_STEP*3;
-            update_prob = UPDATE_PROB_STEP*3;
-        end
-        else if (iteration <= ITERATION_STEP*3)
-        begin
-            nb_radius =  NB_RADIUS_STEP*2;
-            update_prob = UPDATE_PROB_STEP*2;
-        end
-        else if (iteration <= ITERATION_STEP*4)
-        begin
-            nb_radius =  NB_RADIUS_STEP;
-            update_prob = UPDATE_PROB_STEP;
+            if ((iteration<=ITERATION_STEP*step_i) && (iteration>ITERATION_STEP*(step_i-1)))
+            begin
+                nb_radius <=  NB_RADIUS_STEP*(STEP-step_i);
+                update_prob <= UPDATE_PROB_STEP*(STEP-step_i+1);
+            end
         end
     end
     
     always @(posedge clk)
     begin    
-        if (init_neigh_search_en)
-        begin
-            bmu_x = bmu[1]; bmu_y = bmu[0];    
-            bmu_i = (bmu_x-nb_radius) < 0 ? 0 : (bmu_x-nb_radius);
+        if (init_neigh_search_en) begin
+            bmu_x = bmu[1]; bmu_y = bmu[0];  
+            bmu_i = (bmu_x-nb_radius) < 0 ? 0 : (bmu_x-nb_radius);            
             bmu_j = (bmu_y-nb_radius) < 0 ? 0 : (bmu_y-nb_radius);
             init_neigh_search_en=0;
             nb_search_en=1;
@@ -393,17 +399,14 @@ module isom
     
     reg signed [2*DIM:0] temp[DIM-1:0];
     integer digit;
-    
 
     always @(posedge clk)
     begin    
-        if (nb_search_en)
-        begin   
-            man_dist = (bmu_x-bmu_i) > 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
-            man_dist = man_dist + ((bmu_y - bmu_j)>0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
+        if (nb_search_en) begin   
+            man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
+            man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
        
-            if (man_dist <= nb_radius)
-            begin
+            if (man_dist <= nb_radius) begin
                 // update neighbourhood
                 for (digit=0; digit<DIM; digit=digit+1)
                 begin
@@ -419,18 +422,16 @@ module isom
                         else 
                             weights[bmu_i][bmu_j][digit] = temp[digit];
                     end
-                end
+                end                
             end
             
             bmu_j = bmu_j + 1;
                                     
-            if (bmu_j == bmu_y+nb_radius+1 || bmu_j == COLS)
-            begin
+            if (bmu_j == bmu_y+nb_radius+1 || bmu_j == COLS) begin
                 bmu_j = (bmu_y-nb_radius) < 0 ? 0 : (bmu_y-nb_radius);                
                 bmu_i = bmu_i + 1;
             end            
-            if (bmu_i == bmu_x+nb_radius+1 || bmu_i==ROWS)
-            begin
+            if (bmu_i == bmu_x+nb_radius+1 || bmu_i==ROWS) begin
                 nb_search_en = 0; // neighbourhood search finished        
                 next_x_en = 1; // go to the next input
             end
@@ -445,32 +446,77 @@ module isom
     begin
         if (classify_weights_en)         
         begin
+            $display("classify_weights_en");  
             class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] =  class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] + 1;
             classify_weights_en = 0;
         end
     end
     
     integer most_freq = 0;
+    reg [3:0] default_freq [NUM_CLASSES-1:0];
     
     always @(posedge clk)
     begin
         if (class_label_en)
         begin
-            $display("class_label_en");
+            $display("class_label_en");   
             i=0;j=0;k=0;
             for(i=0;i<ROWS;i=i+1)
             begin
                 for(j=0;j<COLS;j=j+1)
                 begin
                     most_freq = 0;
-                    class_labels[i][j] = 3; /////////// hardcoded default value
-                    for(k=0;k<NUM_CLASSES;k=k+1)
+                    class_labels[i][j] = NUM_CLASSES-1; /////////// hardcoded default value
+                    for(k=0;k<NUM_CLASSES-1;k=k+1)
                     begin
                         if (class_frequency_list[i][j][k]>most_freq)
                         begin
                             class_labels[i][j] = k;
                             most_freq = class_frequency_list[i][j][k];
                         end
+                    end
+                    if (class_labels[i][j] == NUM_CLASSES-1) /////////// hardcoded default value
+                    begin                        
+                        // reset array
+                        for(k=0;k<=NUM_CLASSES-1;k=k+1)
+                        begin
+                            default_freq[k] = 0;
+                        end
+                        
+                        if (i-1>0)
+                        begin
+                            k = class_labels[i-1][j];
+                            default_freq[k] = default_freq[k] +1;
+                        end
+                        
+                        if (i+1<ROWS)
+                        begin
+                            k = class_labels[i+1][j];
+                            default_freq[k] = default_freq[k] +1;
+                        end
+                        
+                        if (j-1>0)
+                        begin
+                            k = class_labels[i][j-1];
+                            default_freq[k] = default_freq[k] +1;
+                        end
+                        
+                        if (j+1<COLS)
+                        begin
+                            k = class_labels[i][j+1];
+                            default_freq[k] = default_freq[k] +1;
+                        end
+                        
+                        most_freq = 0;
+                        for(k=0;k<=NUM_CLASSES-2;k=k+1) // only check 0,1,2
+                        begin
+                            if (default_freq[k] >= most_freq)
+                            begin
+                                most_freq = default_freq[k];
+                                class_labels[i][j] = k;
+                            end
+                        end 
+                        $display("Three ", i, j, class_labels[i][j]);                           
                     end
                 end
             end
@@ -486,7 +532,6 @@ module isom
     begin
         if (test_en)
         begin
-            $display("test_en");
             if (t2<TEST_ROWS-1)
             begin
                 t2 = t2 + 1;                
@@ -494,22 +539,21 @@ module isom
             end            
             else
             begin 
+                test_en = 0;
                 $finish;            
             end
-            test_en = 0;
         end
     end
     
-    reg [LOG2_TEST_ROWS-1:0] correct_predictions = 0; // should take log2 of test rows
+    reg [LOG2_TEST_ROWS:0] correct_predictions = 0; // should take log2 of test rows
     reg [LOG2_NUM_CLASSES:0] predictionY[TEST_ROWS-1:0];
     
-    reg [LOG2_TEST_ROWS-1:0] tot_predictions = 0;
+    reg [LOG2_TEST_ROWS:0] tot_predictions = 0;
     
     always @(posedge clk)
     begin
         if (classify_x_en)
         begin
-            $display("classify_x_en");
             i = 0;
             j = 0;
             k = 0;
@@ -559,7 +603,7 @@ module isom
                     idx_i = minimum_distance_indices[iii][1];
                     idx_j = minimum_distance_indices[iii][0];
                     
-                    if (l0_norms[idx_i][idx_j] > max_l0_norm)
+                    if (l0_norms[idx_i][idx_j] >= max_l0_norm)
                     begin
                         max_l0_norm = l0_norms[idx_i][idx_j];
                         bmu[1] = idx_i;
@@ -577,9 +621,9 @@ module isom
             if (class_labels[bmu[1]][bmu[0]] == testY[t2])
             begin
                 correct_predictions = correct_predictions + 1;                
-            end            
+            end    
+            tot_predictions = tot_predictions +1;        
             predictionY[t2] = class_labels[bmu[1]][bmu[0]];     
-            tot_predictions = tot_predictions +1;       
             classify_x_en = 0;
             test_en = 1;
         end        

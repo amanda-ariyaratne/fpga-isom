@@ -4,8 +4,12 @@ Running: /opt/Xilinx/Vivado/2020.2/bin/unwrapped/lnx64.o/xelab -wto c97a37bdf686
 Using 8 slave threads.
 Starting static elaboration
 Pass Through NonSizing Optimizer
-WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 10 for port 'i_Seed_Data' [/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/isom.v:188]
-WARNING: [VRFC 10-3091] actual bit length 11 differs from formal bit length 10 for port 'o_LFSR_Data' [/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/isom.v:189]
-WARNING: [VRFC 10-3705] select index 10000 into 'random_number_arr' is out of bounds [/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/isom.v:189]
 Completed static elaboration
-INFO: [XSIM 43-4323] No Change in HDL. Linking previously generated obj files to create kernel
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.lfsr
+Compiling module xil_defaultlib.isom_default
+Compiling module xil_defaultlib.isom_tb
+Compiling module xil_defaultlib.glbl
+Built simulation snapshot isom_tb_behav

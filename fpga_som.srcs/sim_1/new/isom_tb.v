@@ -16,7 +16,7 @@ module isom_tb();
         for (i=0;i<100_000; i=i+1)
         begin
             clk = ~clk;
-            #5;
+            #10;
         end
     end
 
