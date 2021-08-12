@@ -21,19 +21,20 @@ module isom
         parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 1+1, // log2(NUM_CLASSES)  
         
+        parameter TOTAL_ITERATIONS=50,
+        parameter ITERATION_STEP = 5,
+        parameter ITERATION_NB_STEP = 12,
+        parameter LOG2_TOT_ITERATIONS = 6,
+        
         parameter INITIAL_NB_RADIUS = 4,
         parameter NB_RADIUS_STEP = 1,
         parameter LOG2_NB_RADIUS = 3,
         
-        parameter TOTAL_ITERATIONS=20,
-        parameter ITERATION_STEP = 5,
-        parameter LOG2_TOT_ITERATIONS = 5,
-        
-        parameter INITIAL_UPDATE_PROB = 900,
-        parameter UPDATE_PROB_STEP = 200,
+        parameter INITIAL_UPDATE_PROB = 1000,
+        parameter UPDATE_PROB_STEP = 100,
         parameter LOG2_UPDATE_PROB = 10,
         
-        parameter STEP = 4
+        parameter STEP = 10
     )
     (
         input wire clk,
@@ -69,7 +70,7 @@ module isom
     integer weights_file;
     integer trains_file;
     integer test_file;
-    reg [(DIM*2)-1:0] rand_v;
+    reg [(DIM*DIGIT_DIM)-1:0] rand_v;
     integer eof_weight;
     
     initial
@@ -82,7 +83,7 @@ module isom
             
             for(kw=DIM-1;kw>=0;kw=kw-1)
             begin
-                weights[i][j][kw] = rand_v[(2*kw)+1-:2];
+                weights[i][j][kw] = rand_v[(DIGIT_DIM*kw)+1-:DIGIT_DIM];
             end
             
             j = j + 1;
@@ -174,7 +175,7 @@ module isom
     localparam RAND_NUM_BIT_LEN = 10;
     reg lfsr_en = 1;
     reg seed_en = 1;
-    wire [DIM*RAND_NUM_BIT_LEN-1:0] random_number_arr;
+    wire [(DIM*RAND_NUM_BIT_LEN)-1:0] random_number_arr;
     
     genvar dim_i;
     
@@ -287,9 +288,9 @@ module isom
             end            
             else
             begin    
-                $display("classification_en STOPPED");           
-                class_label_en = 1;
-                classification_en = 0;
+                $display("classification_en STOPPED"); 
+                classification_en = 0;          
+                class_label_en = 1;                
             end 
                          
             next_x_en = 0;
@@ -383,14 +384,25 @@ module isom
     reg signed [LOG2_UPDATE_PROB+1:0] update_prob = INITIAL_UPDATE_PROB;
     integer signed step_i;
      
+    // update update probability
     always @(posedge clk)
     begin
         for (step_i=1; step_i<=STEP;step_i = step_i+1)
         begin
-            if ((iteration<=ITERATION_STEP*step_i) && (iteration>ITERATION_STEP*(step_i-1)))
+            if ((iteration<ITERATION_STEP*step_i) && (iteration>=ITERATION_STEP*(step_i-1)))
             begin
-                nb_radius <=  NB_RADIUS_STEP*(STEP-step_i);
                 update_prob <= UPDATE_PROB_STEP*(STEP-step_i+1);
+            end
+        end
+    end
+    
+    // update neighbourhood radius
+    always @(posedge clk)
+    begin
+        for (step_i=1; step_i<=4;step_i = step_i+1)
+        begin
+            if ( (iteration<(ITERATION_NB_STEP*step_i)) && (iteration>= (ITERATION_NB_STEP*(step_i-1)) ) ) begin
+                nb_radius <=  NB_RADIUS_STEP*(4-step_i);
             end
         end
     end
@@ -417,16 +429,14 @@ module isom
        
             if (man_dist <= nb_radius) begin
                 // update neighbourhood
-                for (digit=0; digit<DIM; digit=digit+1)
-                begin
-                    if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] > update_prob)
-                    begin
+                for (digit=0; digit<DIM; digit=digit+1) begin
+                   if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] < update_prob) begin                        
                         seed_en = 0;
                         temp[digit] = weights[bmu_i][bmu_j][digit] + trainX[t1][digit];
                         
-                        if (temp[digit]>k_value) 
+                        if (temp[digit] > k_value) 
                             weights[bmu_i][bmu_j][digit] = k_value;
-                        else if (temp[digit]< -k_value) 
+                        else if (temp[digit] < -k_value) 
                             weights[bmu_i][bmu_j][digit] = -k_value;
                         else 
                             weights[bmu_i][bmu_j][digit] = temp[digit];
