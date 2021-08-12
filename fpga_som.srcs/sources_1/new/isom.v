@@ -8,10 +8,10 @@ module isom
         parameter DIGIT_DIM = 2,
         parameter signed k_value = 1,
         
-        parameter ROWS = 10,
-        parameter LOG2_ROWS = 4,   // log2(ROWS)
-        parameter COLS = 10,
-        parameter LOG2_COLS = 4,     
+        parameter ROWS = 5,
+        parameter LOG2_ROWS = 3,   // log2(ROWS)
+        parameter COLS = 5,
+        parameter LOG2_COLS = 3,     
         
         parameter TRAIN_ROWS = 75,
         parameter LOG2_TRAIN_ROWS = 7, // log2(TRAIN_ROWS)
@@ -25,12 +25,12 @@ module isom
         parameter NB_RADIUS_STEP = 1,
         parameter LOG2_NB_RADIUS = 3,
         
-        parameter TOTAL_ITERATIONS=4,
-        parameter ITERATION_STEP = 1,
+        parameter TOTAL_ITERATIONS=20,
+        parameter ITERATION_STEP = 5,
         parameter LOG2_TOT_ITERATIONS = 5,
         
         parameter INITIAL_UPDATE_PROB = 900,
-        parameter UPDATE_PROB_STEP = 240,
+        parameter UPDATE_PROB_STEP = 200,
         parameter LOG2_UPDATE_PROB = 10,
         
         parameter STEP = 4
@@ -52,6 +52,7 @@ module isom
     reg [1:0] classify_x_en = 0;
     reg [1:0] classify_weights_en = 0;
     reg [1:0] init_classification_en=0;
+    reg [1:0] classification_en = 0;
     reg [1:0] class_label_en=0;
     
     ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
@@ -73,7 +74,7 @@ module isom
     
     initial
     begin
-        weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/weights.data","r");
+        weights_file = $fopen("/home/mad/Documents/fpga-isom/weights.data","r");
 //        eof_weight = 0;
         while (!$feof(weights_file))
         begin
@@ -104,7 +105,7 @@ module isom
     
     initial
     begin
-        trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/train.data","r");
+        trains_file = $fopen("/home/mad/Documents/fpga-isom/train.data","r");
 //        eof_train=0;
         while (!$feof(trains_file))
             begin        
@@ -131,7 +132,7 @@ module isom
     
     initial
     begin
-        test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/test.data","r");
+        test_file = $fopen("/home/mad/Documents/fpga-isom/test.data","r");
 //        eof_test = 0;
         while (!$feof(test_file))
         begin
@@ -212,6 +213,7 @@ module isom
     begin
         if (training_en)
         begin
+            $display("training_en");
             iteration = -1;
             next_iteration_en = 1;
             training_en = 0;
@@ -227,7 +229,7 @@ module isom
                 iteration = iteration + 1;
                 next_x_en = 1;                
             end
-            else begin
+            else begin                
                 next_x_en = 0;
                 init_classification_en = 1; // start classification
             end
@@ -238,7 +240,7 @@ module isom
     
     always @(posedge clk)
     begin
-        if (next_x_en)
+        if (next_x_en && !classification_en)
         begin                
             if (t1<TRAIN_ROWS-1)
             begin              
@@ -246,18 +248,23 @@ module isom
                 dist_enable = 1;
             end            
             else
-                next_iteration_en = 1;                 
+            begin
+                $display("next_iteration_en ", iteration); 
+                next_iteration_en = 1;  
+            end
+                               
             next_x_en = 0;
         end
     end
     
     /////////////////////////////////////******************************Classification logic******************************/////////////////////////////////
-    reg[1:0] classification_en = 0;
+    
     
     always @(posedge clk)
     begin
         if (init_classification_en)
         begin
+            $display("init_classification_en"); 
             lfsr_en = 0; // turn off the random number generator
             next_x_en = 1;
             classification_en = 1;
@@ -273,12 +280,14 @@ module isom
                 classify_weights_en = 1;   
                       
             if (t1<TRAIN_ROWS-1)
-            begin              
+            begin                           
                 t1 = t1 + 1;
                 dist_enable = 1;
+                $display("classify ", t1);    
             end            
             else
-            begin              
+            begin    
+                $display("classification_en STOPPED");           
                 class_label_en = 1;
                 classification_en = 0;
             end 
@@ -516,7 +525,8 @@ module isom
                                 class_labels[i][j] = k;
                             end
                         end 
-                        $display("Three ", i, j, class_labels[i][j]);                           
+                        $display("Three ", i, j);    
+                        $display(class_labels[i][j]);                         
                     end
                 end
             end

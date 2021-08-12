@@ -1,3 +1,187 @@
 Vivado Simulator 2020.2
 Time resolution is 1 ps
 class frequnecy list initialized
+training_en
+next_iteration_en   0
+next_iteration_en   1
+next_iteration_en   2
+next_iteration_en   3
+next_iteration_en   4
+next_iteration_en   5
+next_iteration_en   6
+next_iteration_en   7
+next_iteration_en   8
+next_iteration_en   9
+next_iteration_en  10
+next_iteration_en  11
+next_iteration_en  12
+next_iteration_en  13
+next_iteration_en  14
+next_iteration_en  15
+next_iteration_en  16
+next_iteration_en  17
+next_iteration_en  18
+next_iteration_en  19
+next_iteration_en  20
+init_classification_en
+classify    0
+classify    1
+classify_weights_en
+classify    2
+classify_weights_en
+classify    3
+classify_weights_en
+classify    4
+classify_weights_en
+classify    5
+classify_weights_en
+classify    6
+classify_weights_en
+classify    7
+classify_weights_en
+classify    8
+classify_weights_en
+classify    9
+classify_weights_en
+classify   10
+classify_weights_en
+classify   11
+classify_weights_en
+classify   12
+classify_weights_en
+classify   13
+classify_weights_en
+classify   14
+classify_weights_en
+classify   15
+classify_weights_en
+classify   16
+classify_weights_en
+classify   17
+classify_weights_en
+classify   18
+classify_weights_en
+classify   19
+classify_weights_en
+classify   20
+classify_weights_en
+classify   21
+classify_weights_en
+classify   22
+classify_weights_en
+classify   23
+classify_weights_en
+classify   24
+classify_weights_en
+classify   25
+classify_weights_en
+classify   26
+classify_weights_en
+classify   27
+classify_weights_en
+classify   28
+classify_weights_en
+classify   29
+classify_weights_en
+classify   30
+classify_weights_en
+classify   31
+classify_weights_en
+classify   32
+classify_weights_en
+classify   33
+classify_weights_en
+classify   34
+classify_weights_en
+classify   35
+classify_weights_en
+classify   36
+classify_weights_en
+classify   37
+classify_weights_en
+classify   38
+classify_weights_en
+classify   39
+classify_weights_en
+classify   40
+classify_weights_en
+classify   41
+classify_weights_en
+classify   42
+classify_weights_en
+classify   43
+classify_weights_en
+classify   44
+classify_weights_en
+classify   45
+classify_weights_en
+classify   46
+classify_weights_en
+classify   47
+classify_weights_en
+classify   48
+classify_weights_en
+classify   49
+classify_weights_en
+classify   50
+classify_weights_en
+classify   51
+classify_weights_en
+classify   52
+classify_weights_en
+classify   53
+classify_weights_en
+classify   54
+classify_weights_en
+classify   55
+classify_weights_en
+classify   56
+classify_weights_en
+classify   57
+classify_weights_en
+classify   58
+classify_weights_en
+classify   59
+classify_weights_en
+classify   60
+classify_weights_en
+classify   61
+classify_weights_en
+classify   62
+classify_weights_en
+classify   63
+classify_weights_en
+classify   64
+classify_weights_en
+classify   65
+classify_weights_en
+classify   66
+classify_weights_en
+classify   67
+classify_weights_en
+classify   68
+classify_weights_en
+classify   69
+classify_weights_en
+classify   70
+classify_weights_en
+classify   71
+classify_weights_en
+classify   72
+classify_weights_en
+classify   73
+classify_weights_en
+classify   74
+classify_weights_en
+classification_en STOPPED
+classify_weights_en
+class_label_en
+Three  1 3
+0
+Three  2 1
+0
+Three  2 2
+0
+Three  3 0
+0
+$finish called at time : 331980 ns : File "/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/isom.v" Line 553
