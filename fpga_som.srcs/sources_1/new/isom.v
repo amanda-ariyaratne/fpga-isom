@@ -3,8 +3,8 @@
 
 module isom
     #(
-        parameter DIM = 1000,
-        parameter LOG2_DIM = 10,    // log2(DIM)
+        parameter DIM = 10,
+        parameter LOG2_DIM = 4,    // log2(DIM)
         parameter DIGIT_DIM = 2,
         parameter signed k_value = 1,
         
@@ -21,10 +21,10 @@ module isom
         parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 1+1, // log2(NUM_CLASSES)  
         
-        parameter TOTAL_ITERATIONS=50,
-        parameter ITERATION_STEP = 5,
-        parameter ITERATION_NB_STEP = 12,
-        parameter LOG2_TOT_ITERATIONS = 6,
+        parameter TOTAL_ITERATIONS=4,
+        parameter ITERATION_STEP = 1,
+        parameter ITERATION_NB_STEP = 1,
+        parameter LOG2_TOT_ITERATIONS = 3,
         
         parameter INITIAL_NB_RADIUS = 4,
         parameter NB_RADIUS_STEP = 1,
@@ -34,7 +34,7 @@ module isom
         parameter UPDATE_PROB_STEP = 100,
         parameter LOG2_UPDATE_PROB = 10,
         
-        parameter STEP = 10
+        parameter STEP = 4
     )
     (
         input wire clk,
@@ -114,7 +114,7 @@ module isom
             
             for(k1=DIM-1;k1>=0;k1=k1-1)
             begin
-                trainX[t1][k1] = temp_train_v[(DIGIT_DIM*k1)+1+LOG2_NUM_CLASSES-:DIGIT_DIM];
+                trainX[t1][k1] = temp_train_v[(DIGIT_DIM*k1)+1+LOG2_NUM_CLASSES -:DIGIT_DIM];
             end
             trainY[t1] = temp_train_v[LOG2_NUM_CLASSES-1:0];
             t1 = t1 + 1;
@@ -140,7 +140,7 @@ module isom
             eof_test = $fscanf(test_file, "%b\n",temp_test_v);
             for(k2=DIM-1;k2>=0;k2=k2-1)
             begin
-                testX[t2][k2] = temp_test_v[(DIGIT_DIM*k2)+1+LOG2_NUM_CLASSES-:DIGIT_DIM];
+                testX[t2][k2] = temp_test_v[(DIGIT_DIM*k2)+LOG2_NUM_CLASSES+1 -:DIGIT_DIM];
             end
                 
             testY[t2] = temp_test_v[LOG2_NUM_CLASSES-1:0];
@@ -180,7 +180,7 @@ module isom
     genvar dim_i;
     
     generate
-        for(dim_i=0; dim_i < DIM-1; dim_i=dim_i+1)
+        for(dim_i=1; dim_i < DIM; dim_i=dim_i+1)
         begin
             lfsr #(.NUM_BITS(RAND_NUM_BIT_LEN)) lfsr_rand
             (
@@ -188,7 +188,7 @@ module isom
                 .i_Enable(lfsr_en),
                 .i_Seed_DV(seed_en),
                 .i_Seed_Data(dim_i[RAND_NUM_BIT_LEN-1:0]),
-                .o_LFSR_Data(random_number_arr[((dim_i+1)*RAND_NUM_BIT_LEN)-1 : dim_i*RAND_NUM_BIT_LEN])
+                .o_LFSR_Data(random_number_arr[(dim_i*RAND_NUM_BIT_LEN)-1 : (dim_i-1)*RAND_NUM_BIT_LEN])
             );
         end
     endgenerate

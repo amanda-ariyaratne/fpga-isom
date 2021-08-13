@@ -1,0 +1,6 @@
+INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/isom.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module isom
+INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/lfsr.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module lfsr
+INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/isom_tb2.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module isom_tb2
