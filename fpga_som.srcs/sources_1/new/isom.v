@@ -3,8 +3,8 @@
 
 module isom
     #(
-        parameter DIM = 100,
-        parameter LOG2_DIM = 7,    // log2(DIM)
+        parameter DIM = 1000,
+        parameter LOG2_DIM = 10,    // log2(DIM)
         parameter DIGIT_DIM = 2,
         parameter signed k_value = 1,
         
@@ -27,13 +27,15 @@ module isom
         parameter INITIAL_NB_RADIUS = 3,
         parameter NB_RADIUS_STEP = 1,
         parameter LOG2_NB_RADIUS = 3,
-        parameter ITERATION_NB_STEP = 1, // total_iterations / nb_radius_step
+        parameter ITERATION_NB_STEP = 3, // total_iterations / nb_radius_step
         
         parameter INITIAL_UPDATE_PROB = 1000,
-        parameter UPDATE_PROB_STEP = 100,
+        parameter UPDATE_PROB_STEP = 200,
         parameter LOG2_UPDATE_PROB = 10,
         parameter ITERATION_STEP = 1,          
-        parameter STEP = 4
+        parameter STEP = 4,
+        
+        parameter RAND_NUM_BIT_LEN = 10
     )
     (
         input wire clk,
@@ -56,27 +58,51 @@ module isom
     reg [1:0] class_label_en=0;
     reg write_en = 0;
     
-    ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
+    ///////////////////////////////////////////////////////*******************Other variables***********/////////////////////////////////////
+    
+    reg signed [LOG2_TOT_ITERATIONS:0] iteration;
+    
+    reg [LOG2_ROWS:0] ii = 0;
+    reg [LOG2_COLS:0] jj = 0;
+    reg [LOG2_NUM_CLASSES:0] kk = 0;
+    
+    reg [LOG2_COLS:0] bmu [1:0];
+    reg [LOG2_TRAIN_ROWS:0] class_frequency_list [ROWS-1:0][COLS-1:0][NUM_CLASSES-1:0];
+    
+    ///////////////////////////////////////////////////////*******************File read variables***********/////////////////////////////////////
     
     
     reg signed [DIGIT_DIM-1:0] weights [ROWS-1:0][COLS-1:0][DIM-1:0];
+    reg signed [DIGIT_DIM-1:0] trainX [TRAIN_ROWS-1:0][DIM-1:0];    
+    reg signed [DIGIT_DIM-1:0] testX [TEST_ROWS-1:0][DIM-1:0];
+    reg [LOG2_NUM_CLASSES-1:0] trainY [TRAIN_ROWS-1:0];
+    reg [LOG2_NUM_CLASSES-1:0] testY [TEST_ROWS-1:0];
+    
     reg signed [LOG2_ROWS:0] i = 0;
     reg signed [LOG2_COLS:0] j = 0;
     reg signed [LOG2_DIM:0] k = DIM-1;
     reg signed [LOG2_DIM:0] kw = DIM-1;
     reg signed [LOG2_DIM:0] k1 = DIM-1;
-    reg signed [LOG2_DIM:0] k2 = DIM-1;
+    reg signed [LOG2_DIM:0] k2 = DIM-1;    
+    
+    reg signed [LOG2_TRAIN_ROWS:0] t1 = 0;
+    reg signed [LOG2_TEST_ROWS:0] t2 = 0;
     
     integer weights_file;
     integer trains_file;
     integer test_file;
-    reg [(DIM*DIGIT_DIM)-1:0] rand_v;
-    integer eof_weight;
     
-    initial
-    begin
+    reg [(DIM*DIGIT_DIM)-1:0] rand_v;
+    reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_train_v;
+    reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_test_v;
+    
+    integer eof_weight;
+    integer eof_train;
+    integer eof_test;
+    
+    ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
+    initial begin
         weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/weights.data","r");
-//        eof_weight = 0;
         while (!$feof(weights_file))
         begin
             eof_weight = $fscanf(weights_file, "%b\n",rand_v);
@@ -97,17 +123,8 @@ module isom
     end
     
     ///////////////////////////////////////////////////////*******************Read train vectors***********/////////////////////////////////////
-
-    reg signed [DIGIT_DIM-1:0] trainX [TRAIN_ROWS-1:0][DIM-1:0];
-    reg [LOG2_NUM_CLASSES-1:0] trainY [TRAIN_ROWS-1:0];
-    reg signed [LOG2_TRAIN_ROWS:0] t1 = 0;
-    reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_train_v;
-    integer eof_train;
-    
-    initial
-    begin
+    initial begin
         trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/train.data","r");
-//        eof_train=0;
         while (!$feof(trains_file))
             begin        
             eof_train = $fscanf(trains_file, "%b\n",temp_train_v);
@@ -124,17 +141,8 @@ module isom
     end
 
     ///////////////////////////////////////////////////////*******************Read test vectors***********/////////////////////////////////////
-    
-    reg signed [DIGIT_DIM-1:0] testX [TEST_ROWS-1:0][DIM-1:0];
-    reg [LOG2_NUM_CLASSES-1:0] testY [TEST_ROWS-1:0];
-    reg signed [LOG2_TEST_ROWS:0] t2 = 0;
-    reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_test_v;
-    integer eof_test;
-    
-    initial
-    begin
+    initial begin
         test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/test.data","r");
-//        eof_test = 0;
         while (!$feof(test_file))
         begin
             eof_test = $fscanf(test_file, "%b\n",temp_test_v);
@@ -150,12 +158,6 @@ module isom
     end
     
     ////////////////////*****************************Initialize frequenct list*************//////////////////////////////
-    
-    reg [LOG2_TRAIN_ROWS:0] class_frequency_list [ROWS-1:0][COLS-1:0][NUM_CLASSES-1:0];
-    reg [LOG2_ROWS:0] ii = 0;
-    reg [LOG2_COLS:0] jj = 0;
-    reg [LOG2_NUM_CLASSES:0] kk = 0;
-    
     initial
     begin
         for (ii = 0; ii < ROWS; ii = ii + 1)
@@ -172,7 +174,7 @@ module isom
     end
     
     ///////////////////////////////////////////////////////****************Start LFSR**************/////////////////////////////////////
-    localparam RAND_NUM_BIT_LEN = 10;
+    
     reg lfsr_en = 1;
     reg seed_en = 1;
     wire [(DIM*RAND_NUM_BIT_LEN)-1:0] random_number_arr;
@@ -194,22 +196,6 @@ module isom
     endgenerate
     
     ///////////////////////////////////////////////////////*******************Start Training***********/////////////////////////////////////
-    
-    
-    reg [LOG2_DIM:0] hamming_distance;
-    reg [LOG2_DIM:0] non_zero_count;
-    reg [LOG2_DIM:0] min_distance = DIM;    
-    reg [LOG2_DIM:0] max_l0_norm;
-    reg [LOG2_DIM:0] distances [ROWS-1:0][COLS-1:0]; // log2 dim
-    reg [LOG2_DIM:0] l0_norms [ROWS-1:0][COLS-1:0];    
-    reg [LOG2_COLS:0] minimum_distance_indices [(ROWS*COLS-1):0][1:0]; // since COL==ROW any of LOG2_can be used here
-    reg [LOG2_ROWS:0] idx_i;
-    reg [LOG2_COLS:0] idx_j;
-    reg [LOG2_DIM-1:0] min_distance_next_index = 0;    
-    reg [LOG2_COLS:0] bmu [1:0]; // since COL==ROW any of LOG2_ can be used here
-    
-    reg signed [LOG2_TOT_ITERATIONS:0] iteration;
-    
     always @(posedge clk)
     begin
         if (training_en)
@@ -245,7 +231,7 @@ module isom
         if (next_x_en && !classification_en)
         begin                
             if (t1<TRAIN_ROWS-1)
-            begin              
+            begin        
                 t1 = t1 + 1;
                 dist_enable = 1;
             end            
@@ -260,8 +246,6 @@ module isom
     end
     
     /////////////////////////////////////******************************Classification logic******************************/////////////////////////////////
-    
-    
     always @(posedge clk)
     begin
         if (init_classification_en)
@@ -278,8 +262,9 @@ module isom
     begin
         if (next_x_en && classification_en)
         begin       
+            // classify prev x 's bmu
             if (t1>=0)
-                classify_weights_en = 1;   
+                class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] =  class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] + 1;
                       
             if (t1<TRAIN_ROWS-1)
             begin                           
@@ -299,8 +284,20 @@ module isom
     end
     
     //////////////////******************************Find BMU******************************/////////////////////////////////
+    reg [LOG2_DIM-1:0] iii = 0; 
     
-    reg [LOG2_DIM-1:0] iii = 0;   
+    reg [LOG2_DIM:0] hamming_distance;
+    reg [LOG2_DIM:0] min_distance = DIM;   
+    reg [LOG2_DIM:0] distances [ROWS-1:0][COLS-1:0];       
+    reg [LOG2_COLS:0] minimum_distance_indices [(ROWS*COLS-1):0][1:0];
+    reg [LOG2_DIM-1:0] min_distance_next_index = 0;
+    
+    reg [LOG2_DIM:0] non_zero_count;    
+    reg [LOG2_DIM:0] max_l0_norm;
+    reg [LOG2_DIM:0] l0_norms [ROWS-1:0][COLS-1:0]; 
+        
+    reg [LOG2_ROWS:0] idx_i;
+    reg [LOG2_COLS:0] idx_j;        
     
     always @(posedge clk)
     begin
@@ -320,7 +317,6 @@ module isom
                     for (k=0;k<DIM;k=k+1)
                     begin
                         // get distnace
-                        
                         hamming_distance = hamming_distance + (weights[i][j][k]*trainX[t1][k] == 2'b11 ? 2'b01 : 2'b00);
                         // get zero count
                         non_zero_count = non_zero_count + (weights[i][j][k] == 2'b00 ? 2'b00 : 2'b01); 
@@ -366,7 +362,7 @@ module isom
                 bmu[1] = minimum_distance_indices[0][1];
                 bmu[0] = minimum_distance_indices[0][0];
             end
-            $display("bmu is ", bmu[1], " ", bmu[0]);
+            
             dist_enable = 0;
             
             if (!classification_en)
@@ -426,14 +422,14 @@ module isom
 
     always @(posedge clk)
     begin    
-        if (nb_search_en) begin   
+        if (nb_search_en) begin  
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
             
             if (man_dist <= nb_radius) begin
                 // update neighbourhood
                 for (digit=0; digit<DIM; digit=digit+1) begin
-                   //if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] < update_prob) begin                        
+                   if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] < update_prob) begin                        
                         seed_en = 0;
                         temp[digit] = weights[bmu_i][bmu_j][digit] + trainX[t1][digit];
                         
@@ -443,10 +439,10 @@ module isom
                             weights[bmu_i][bmu_j][digit] = -k_value;
                         else 
                             weights[bmu_i][bmu_j][digit] = temp[digit];
-                    //end
+                    end
                 end                
             end
-            
+                        
             bmu_j = bmu_j + 1;
                                     
             if (bmu_j == bmu_y+nb_radius+1 || bmu_j == COLS) begin
@@ -457,22 +453,16 @@ module isom
                 nb_search_en = 0; // neighbourhood search finished        
                 next_x_en = 1; // go to the next input
             end
+            
+//            end
+            
+            
         end
     end
     
     /////////////////////************Start Classification of weight vectors********///////////////////////
-    
     reg [LOG2_NUM_CLASSES:0] class_labels [ROWS-1:0][COLS-1:0];    
 
-    always @(posedge clk)
-    begin
-        if (classify_weights_en)         
-        begin
-            class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] =  class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] + 1;
-            classify_weights_en = 0;
-        end
-    end
-    
     integer most_freq = 0;
     reg [3:0] default_freq [NUM_CLASSES-1:0];
     
@@ -577,7 +567,8 @@ module isom
             i = 0;
             j = 0;
             k = 0;
-            min_distance_next_index = 0;  
+            min_distance_next_index = 0; // reset index
+            min_distance = DIM;
             for (i=0;i<ROWS;i=i+1)
             begin
                 for (j=0;j<COLS;j=j+1)
@@ -654,8 +645,8 @@ module isom
         if (write_en) begin
             fd = $fopen("/home/aari/Projects/Vivado/fpga_som/weight_out.data", "w");
             i=0; j=0; k=0;
-            for (i=ROWS-1; i>=0; i=i-1) begin
-                for (j=COLS-1; j>=0; j=j-1) begin
+            for (i=0; i<=ROWS-1; i=i+1) begin
+                for (j=0; j<=COLS-1; j=j+1) begin
                     for (k=DIM-1; k>=0; k=k-1) begin                        
                         $fwriteb(fd, weights[i][j][k]);
                     end
@@ -665,7 +656,7 @@ module isom
             
             #10 $fclose(fd);
             
-            #10 $finish;   
+            $finish;   
         end
     end
         
