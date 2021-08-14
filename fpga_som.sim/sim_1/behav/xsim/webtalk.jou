@@ -2,11 +2,11 @@
 # Webtalk v2020.2 (64-bit)
 # SW Build 3064766 on Wed Nov 18 09:12:47 MST 2020
 # IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
-# Start of session at: Fri Aug 13 21:01:39 2021
-# Process ID: 32575
-# Current directory: /home/mad/Documents/fpga-isom/fpga_som.sim/sim_1/behav/xsim
-# Command line: wbtcv -mode batch -source /home/mad/Documents/fpga-isom/fpga_som.sim/sim_1/behav/xsim/xsim.dir/isom_tb2_behav/webtalk/xsim_webtalk.tcl -notrace
-# Log file: /home/mad/Documents/fpga-isom/fpga_som.sim/sim_1/behav/xsim/webtalk.log
-# Journal file: /home/mad/Documents/fpga-isom/fpga_som.sim/sim_1/behav/xsim/webtalk.jou
+# Start of session at: Fri Aug 13 22:14:09 2021
+# Process ID: 16165
+# Current directory: /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim
+# Command line: wbtcv -mode batch -source /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/isom_tb3_behav/webtalk/xsim_webtalk.tcl -notrace
+# Log file: /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/webtalk.log
+# Journal file: /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/webtalk.jou
 #-----------------------------------------------------------
-source /home/mad/Documents/fpga-isom/fpga_som.sim/sim_1/behav/xsim/xsim.dir/isom_tb2_behav/webtalk/xsim_webtalk.tcl -notrace
+source /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/isom_tb3_behav/webtalk/xsim_webtalk.tcl -notrace

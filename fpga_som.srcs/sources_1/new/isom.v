@@ -3,8 +3,8 @@
 
 module isom
     #(
-        parameter DIM = 10,
-        parameter LOG2_DIM = 4,    // log2(DIM)
+        parameter DIM = 100,
+        parameter LOG2_DIM = 7,    // log2(DIM)
         parameter DIGIT_DIM = 2,
         parameter signed k_value = 1,
         
@@ -21,19 +21,18 @@ module isom
         parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 1+1, // log2(NUM_CLASSES)  
         
-        parameter TOTAL_ITERATIONS=4,
-        parameter ITERATION_STEP = 1,
-        parameter ITERATION_NB_STEP = 1,
-        parameter LOG2_TOT_ITERATIONS = 3,
+        parameter TOTAL_ITERATIONS=4,              
+        parameter LOG2_TOT_ITERATIONS = 4,
         
-        parameter INITIAL_NB_RADIUS = 4,
+        parameter INITIAL_NB_RADIUS = 3,
         parameter NB_RADIUS_STEP = 1,
         parameter LOG2_NB_RADIUS = 3,
+        parameter ITERATION_NB_STEP = 1, // total_iterations / nb_radius_step
         
         parameter INITIAL_UPDATE_PROB = 1000,
         parameter UPDATE_PROB_STEP = 100,
         parameter LOG2_UPDATE_PROB = 10,
-        
+        parameter ITERATION_STEP = 1,          
         parameter STEP = 4
     )
     (
@@ -55,13 +54,14 @@ module isom
     reg [1:0] init_classification_en=0;
     reg [1:0] classification_en = 0;
     reg [1:0] class_label_en=0;
+    reg write_en = 0;
     
     ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     
     
     reg signed [DIGIT_DIM-1:0] weights [ROWS-1:0][COLS-1:0][DIM-1:0];
-    reg [LOG2_ROWS:0] i = 0;
-    reg [LOG2_COLS:0] j = 0;
+    reg signed [LOG2_ROWS:0] i = 0;
+    reg signed [LOG2_COLS:0] j = 0;
     reg signed [LOG2_DIM:0] k = DIM-1;
     reg signed [LOG2_DIM:0] kw = DIM-1;
     reg signed [LOG2_DIM:0] k1 = DIM-1;
@@ -75,7 +75,7 @@ module isom
     
     initial
     begin
-        weights_file = $fopen("/home/mad/Documents/fpga-isom/weights.data","r");
+        weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/weights.data","r");
 //        eof_weight = 0;
         while (!$feof(weights_file))
         begin
@@ -106,7 +106,7 @@ module isom
     
     initial
     begin
-        trains_file = $fopen("/home/mad/Documents/fpga-isom/train.data","r");
+        trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/train.data","r");
 //        eof_train=0;
         while (!$feof(trains_file))
             begin        
@@ -133,7 +133,7 @@ module isom
     
     initial
     begin
-        test_file = $fopen("/home/mad/Documents/fpga-isom/test.data","r");
+        test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/test.data","r");
 //        eof_test = 0;
         while (!$feof(test_file))
         begin
@@ -180,7 +180,7 @@ module isom
     genvar dim_i;
     
     generate
-        for(dim_i=1; dim_i < DIM; dim_i=dim_i+1)
+        for(dim_i=1; dim_i <= DIM; dim_i=dim_i+1)
         begin
             lfsr #(.NUM_BITS(RAND_NUM_BIT_LEN)) lfsr_rand
             (
@@ -226,11 +226,12 @@ module isom
         if (next_iteration_en)
         begin
             t1 = -1; // reset trainset pointer
-            if (iteration<TOTAL_ITERATIONS) begin
+            if (iteration<(TOTAL_ITERATIONS-1)) begin
                 iteration = iteration + 1;
                 next_x_en = 1;                
             end
-            else begin                
+            else begin
+                iteration = -1;                
                 next_x_en = 0;
                 init_classification_en = 1; // start classification
             end
@@ -319,6 +320,7 @@ module isom
                     for (k=0;k<DIM;k=k+1)
                     begin
                         // get distnace
+                        
                         hamming_distance = hamming_distance + (weights[i][j][k]*trainX[t1][k] == 2'b11 ? 2'b01 : 2'b00);
                         // get zero count
                         non_zero_count = non_zero_count + (weights[i][j][k] == 2'b00 ? 2'b00 : 2'b01); 
@@ -364,6 +366,7 @@ module isom
                 bmu[1] = minimum_distance_indices[0][1];
                 bmu[0] = minimum_distance_indices[0][0];
             end
+            $display("bmu is ", bmu[1], " ", bmu[0]);
             dist_enable = 0;
             
             if (!classification_en)
@@ -389,7 +392,7 @@ module isom
     begin
         for (step_i=1; step_i<=STEP;step_i = step_i+1)
         begin
-            if ((iteration<ITERATION_STEP*step_i) && (iteration>=ITERATION_STEP*(step_i-1)))
+            if ((iteration<(ITERATION_STEP*step_i)) && (iteration>=(ITERATION_STEP*(step_i-1))))
             begin
                 update_prob <= UPDATE_PROB_STEP*(STEP-step_i+1);
             end
@@ -426,11 +429,11 @@ module isom
         if (nb_search_en) begin   
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
-       
+            
             if (man_dist <= nb_radius) begin
                 // update neighbourhood
                 for (digit=0; digit<DIM; digit=digit+1) begin
-                   if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] < update_prob) begin                        
+                   //if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] < update_prob) begin                        
                         seed_en = 0;
                         temp[digit] = weights[bmu_i][bmu_j][digit] + trainX[t1][digit];
                         
@@ -440,7 +443,7 @@ module isom
                             weights[bmu_i][bmu_j][digit] = -k_value;
                         else 
                             weights[bmu_i][bmu_j][digit] = temp[digit];
-                    end
+                    //end
                 end                
             end
             
@@ -465,7 +468,6 @@ module isom
     begin
         if (classify_weights_en)         
         begin
-            $display("classify_weights_en");  
             class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] =  class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] + 1;
             classify_weights_en = 0;
         end
@@ -534,9 +536,7 @@ module isom
                                 most_freq = default_freq[k];
                                 class_labels[i][j] = k;
                             end
-                        end 
-                        $display("Three ", i, j);    
-                        $display(class_labels[i][j]);                         
+                        end                      
                     end
                 end
             end
@@ -560,7 +560,7 @@ module isom
             else
             begin 
                 test_en = 0;
-                $finish;            
+                write_en = 1;            
             end
         end
     end
@@ -647,6 +647,26 @@ module isom
             classify_x_en = 0;
             test_en = 1;
         end        
+    end
+    
+    integer fd;    
+    always @(posedge clk) begin
+        if (write_en) begin
+            fd = $fopen("/home/aari/Projects/Vivado/fpga_som/weight_out.data", "w");
+            i=0; j=0; k=0;
+            for (i=ROWS-1; i>=0; i=i-1) begin
+                for (j=COLS-1; j>=0; j=j-1) begin
+                    for (k=DIM-1; k>=0; k=k-1) begin                        
+                        $fwriteb(fd, weights[i][j][k]);
+                    end
+                    $fwrite(fd, "\n");
+                end
+            end
+            
+            #10 $fclose(fd);
+            
+            #10 $finish;   
+        end
     end
         
     assign prediction = correct_predictions;

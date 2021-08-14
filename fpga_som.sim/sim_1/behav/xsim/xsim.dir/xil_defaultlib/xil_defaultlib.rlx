@@ -2,8 +2,8 @@
 2020.2
 Nov 18 2020
 09:20:35
-/home/mad/Documents/fpga-isom/fpga_som.sim/sim_1/behav/xsim/glbl.v,1627715504,verilog,,,,glbl,,,,,,,,
-/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/isom_tb.v,1628694426,verilog,,,,isom_tb,,,,,,,,
-/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/isom_tb2.v,1628868674,verilog,,,,isom_tb2,,,,,,,,
-/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/isom.v,1628868942,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/lfsr.v,,isom,,,,,,,,
-/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/lfsr.v,1628236356,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/isom_tb2.v,,lfsr,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/glbl.v,1605673889,verilog,,,,glbl,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/isom_tb2.v,1628869180,verilog,,,,isom_tb2,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/isom_tb3.v,1628872660,verilog,,,,isom_tb3,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/isom.v,1628922243,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/lfsr.v,,isom,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/lfsr.v,1628260509,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/isom_tb3.v,,lfsr,,,,,,,,
