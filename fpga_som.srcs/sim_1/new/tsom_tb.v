@@ -1,12 +1,12 @@
 `timescale 1ns / 1ps
 
-module isom_tb();
+module tsom_tb();
     reg clk = 0;
     reg reset = 0;
     wire [8:0] prediction;
     wire completed;
     
-    isom uut(
+    tsom uut(
         .clk(clk),
         .prediction(prediction),
         .completed(completed)

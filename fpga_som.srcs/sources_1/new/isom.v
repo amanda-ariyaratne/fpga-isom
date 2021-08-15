@@ -37,7 +37,8 @@ module isom
     )
     (
         input wire clk,
-        output wire [LOG2_TEST_ROWS:0] prediction
+        output wire [LOG2_TEST_ROWS:0] prediction,
+        output wire completed
     );
 
     ///////////////////////////////////////////////////////*******************Declare enables***********/////////////////////////////////////
@@ -55,6 +56,7 @@ module isom
     reg [1:0] classification_en = 0;
     reg [1:0] class_label_en=0;
     reg write_en = 0;
+    reg is_completed = 0;
     
     ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     
@@ -75,7 +77,7 @@ module isom
     
     initial
     begin
-        weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/weights.data","r");
+        weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/isom/weights.data","r");
 //        eof_weight = 0;
         while (!$feof(weights_file))
         begin
@@ -106,7 +108,7 @@ module isom
     
     initial
     begin
-        trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/train.data","r");
+        trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/isom/train.data","r");
 //        eof_train=0;
         while (!$feof(trains_file))
             begin        
@@ -133,8 +135,7 @@ module isom
     
     initial
     begin
-        test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/test.data","r");
-//        eof_test = 0;
+        test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/isom/test.data","r");
         while (!$feof(test_file))
         begin
             eof_test = $fscanf(test_file, "%b\n",temp_test_v);
@@ -652,7 +653,7 @@ module isom
     integer fd;    
     always @(posedge clk) begin
         if (write_en) begin
-            fd = $fopen("/home/aari/Projects/Vivado/fpga_som/weight_out.data", "w");
+            fd = $fopen("/home/aari/Projects/Vivado/fpga_som/isom/weight_out.data", "w");
             i=0; j=0; k=0;
             for (i=ROWS-1; i>=0; i=i-1) begin
                 for (j=COLS-1; j>=0; j=j-1) begin
@@ -663,12 +664,12 @@ module isom
                 end
             end
             
-            #10 $fclose(fd);
-            
-            #10 $finish;   
+            #10 $fclose(fd);            
+            is_completed = 1;   
         end
     end
         
     assign prediction = correct_predictions;
+    assign completed = is_completed;
 
 endmodule
