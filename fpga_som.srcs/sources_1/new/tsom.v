@@ -358,14 +358,16 @@ module tsom
             if (min_distance_next_index > 1) begin
                 iii = 0;
                 min_hash_count = DIM-1;
-                for(iii=0;iii<min_distance_next_index; iii=iii+1) begin
-                    idx_i = minimum_distance_indices[iii][1];
-                    idx_j = minimum_distance_indices[iii][0];
-                    // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
-                    if (hash_counts[idx_i][idx_j] < min_hash_count) begin
-                        min_hash_count = hash_counts[idx_i][idx_j];
-                        bmu[1] = idx_i;
-                        bmu[0] = idx_j;
+                for(iii=0;iii<(ROWS*COLS-1); iii=iii+1) begin
+                    if (iii<min_distance_next_index) begin                    
+                        idx_i = minimum_distance_indices[iii][1];
+                        idx_j = minimum_distance_indices[iii][0];
+                        // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
+                        if (hash_counts[idx_i][idx_j] < min_hash_count) begin
+                            min_hash_count = hash_counts[idx_i][idx_j];
+                            bmu[1] = idx_i;
+                            bmu[0] = idx_j;
+                        end
                     end
                 end
             end
@@ -623,14 +625,16 @@ module tsom
             if (min_distance_next_index > 1) begin
                 iii = 0;
                 min_hash_count = DIM-1;
-                for(iii=0;iii<min_distance_next_index; iii=iii+1) begin
-                    idx_i = minimum_distance_indices[iii][1];
-                    idx_j = minimum_distance_indices[iii][0];
-                    // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
-                    if (hash_counts[idx_i][idx_j] < min_hash_count) begin
-                        min_hash_count = hash_counts[idx_i][idx_j];
-                        bmu[1] = idx_i;
-                        bmu[0] = idx_j;
+                for(iii=0;iii<(ROWS*COLS-1); iii=iii+1) begin
+                    if (iii<min_distance_next_index) begin                    
+                        idx_i = minimum_distance_indices[iii][1];
+                        idx_j = minimum_distance_indices[iii][0];
+                        // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
+                        if (hash_counts[idx_i][idx_j] < min_hash_count) begin
+                            min_hash_count = hash_counts[idx_i][idx_j];
+                            bmu[1] = idx_i;
+                            bmu[0] = idx_j;
+                        end
                     end
                 end
             end

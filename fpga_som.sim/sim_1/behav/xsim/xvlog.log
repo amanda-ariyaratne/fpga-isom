@@ -1,4 +1,6 @@
-INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/test.v" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module test
-INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/test_tb.v" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module test_tb
+INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/lfsr.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module lfsr
+INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/tsom.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tsom
+INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/tsom_tb.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tsom_tb

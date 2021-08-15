@@ -51,12 +51,15 @@ module isom
     reg [1:0] dist_enable = 0;
     reg [1:0] init_neigh_search_en=0;  
     reg [1:0] nb_search_en=0;
+    reg train_multi_bmu_en=0;
     reg [1:0] test_en = 0;
     reg [1:0] classify_x_en = 0;
     reg [1:0] classify_weights_en = 0;
     reg [1:0] init_classification_en=0;
     reg [1:0] classification_en = 0;
     reg [1:0] class_label_en=0;
+    reg multi_bmu_en=0;
+    reg next_prediction_en=0;
     reg write_en = 0;
     reg is_completed = 0;
     
@@ -333,34 +336,34 @@ module isom
                 end //j                
             end // i
             
-            // if there are more than one bmu
-            if (min_distance_next_index > 1) begin
+            // more than one bmu
+            if (min_distance_next_index > 1) begin  // more than one bmu
                 iii = 0;
                 max_l0_norm = 0;
-                for(iii=0;iii<min_distance_next_index; iii=iii+1) begin
-                    idx_i = minimum_distance_indices[iii][1];
-                    idx_j = minimum_distance_indices[iii][0];
-                    // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
-                    if (l0_norms[idx_i][idx_j] > max_l0_norm) begin
-                        max_l0_norm = l0_norms[idx_i][idx_j];
-                        bmu[1] = idx_i;
-                        bmu[0] = idx_j;
+                for(iii=0;iii<(ROWS*COLS-1); iii=iii+1) begin
+                    if (iii<min_distance_next_index) begin
+                        idx_i = minimum_distance_indices[iii][1];
+                        idx_j = minimum_distance_indices[iii][0];
+                        
+                        if (l0_norms[idx_i][idx_j] >= max_l0_norm) begin
+                            max_l0_norm = l0_norms[idx_i][idx_j];
+                            bmu[1] = idx_i;
+                            bmu[0] = idx_j;
+                        end
                     end
                 end
-            end
-            
-            
+            end            
             else begin // only one minimum distance node is there 
                 bmu[1] = minimum_distance_indices[0][1];
                 bmu[0] = minimum_distance_indices[0][0];
-            end
-            
-            dist_enable = 0;
+            end            
             
             if (!classification_en)
                 init_neigh_search_en = 1; // find neighbours
             else
                 next_x_en = 1; // classify node
+                
+            dist_enable = 0;
         end        
     end
     
@@ -596,39 +599,43 @@ module isom
                 end //j                
             end // i
             
-            // if there are more than one bmu
-            if (min_distance_next_index > 1)
-            begin
+            if (min_distance_next_index > 1) begin  // more than one bmu
                 iii = 0;
                 max_l0_norm = 0;
-                for(iii=0;iii<min_distance_next_index; iii=iii+1)
-                begin
-                    idx_i = minimum_distance_indices[iii][1];
-                    idx_j = minimum_distance_indices[iii][0];
-                    
-                    if (l0_norms[idx_i][idx_j] >= max_l0_norm)
-                    begin
-                        max_l0_norm = l0_norms[idx_i][idx_j];
-                        bmu[1] = idx_i;
-                        bmu[0] = idx_j;
+                for(iii=0;iii<(ROWS*COLS-1); iii=iii+1) begin
+                    if (iii<min_distance_next_index) begin
+                        idx_i = minimum_distance_indices[iii][1];
+                        idx_j = minimum_distance_indices[iii][0];
+                        
+                        if (l0_norms[idx_i][idx_j] >= max_l0_norm) begin
+                            max_l0_norm = l0_norms[idx_i][idx_j];
+                            bmu[1] = idx_i;
+                            bmu[0] = idx_j;
+                        end
                     end
                 end
-            end
+             end
             
-            else // only one minimum distance node is there
-            begin
+            else begin
                 bmu[1] = minimum_distance_indices[0][1];
                 bmu[0] = minimum_distance_indices[0][0];
             end
-            // check correctness
-            if (class_labels[bmu[1]][bmu[0]] == testY[t2])
-            begin
+            
+            next_prediction_en=1;
+            classify_x_en = 0;            
+        end        
+    end
+    
+    always @(posedge clk) begin
+        if (next_prediction_en) begin
+            if (class_labels[bmu[1]][bmu[0]] == testY[t2]) begin
                 correct_predictions = correct_predictions + 1;                
             end    
             tot_predictions = tot_predictions +1;        
-            predictionY[t2] = class_labels[bmu[1]][bmu[0]];     
-            classify_x_en = 0;
+            predictionY[t2] = class_labels[bmu[1]][bmu[0]];  
+               
             test_en = 1;
+            next_prediction_en=0;
         end        
     end
     
