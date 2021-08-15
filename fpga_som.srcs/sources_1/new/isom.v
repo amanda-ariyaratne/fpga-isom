@@ -73,7 +73,6 @@ module isom
     
     ///////////////////////////////////////////////////////*******************File read variables***********/////////////////////////////////////
     
-    
     reg signed [DIGIT_DIM-1:0] weights [ROWS-1:0][COLS-1:0][DIM-1:0];
     reg signed [DIGIT_DIM-1:0] trainX [TRAIN_ROWS-1:0][DIM-1:0];    
     reg signed [DIGIT_DIM-1:0] testX [TEST_ROWS-1:0][DIM-1:0];
@@ -104,7 +103,7 @@ module isom
     
     ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     initial begin
-        weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/weights.data","r");
+        weights_file = $fopen("/home/mad/Documents/fpga-isom/isom/weights.data","r");
         while (!$feof(weights_file))
         begin
             eof_weight = $fscanf(weights_file, "%b\n",rand_v);
@@ -126,7 +125,7 @@ module isom
     
     ///////////////////////////////////////////////////////*******************Read train vectors***********/////////////////////////////////////
     initial begin
-        trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/train.data","r");
+        trains_file = $fopen("/home/mad/Documents/fpga-isom/isom/train.data","r");
         while (!$feof(trains_file))
             begin        
             eof_train = $fscanf(trains_file, "%b\n",temp_train_v);
@@ -144,12 +143,10 @@ module isom
 
     ///////////////////////////////////////////////////////*******************Read test vectors***********/////////////////////////////////////
     initial begin
-        test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/test.data","r");
-        while (!$feof(test_file))
-        begin
+        test_file = $fopen("/home/mad/Documents/fpga-isom/isom/test.data","r");
+        while (!$feof(test_file)) begin
             eof_test = $fscanf(test_file, "%b\n",temp_test_v);
-            for(k2=DIM-1;k2>=0;k2=k2-1)
-            begin
+            for(k2=DIM-1;k2>=0;k2=k2-1) begin
                 testX[t2][k2] = temp_test_v[(DIGIT_DIM*k2)+LOG2_NUM_CLASSES+1 -:DIGIT_DIM];
             end
                 
@@ -160,19 +157,20 @@ module isom
     end
     
     ////////////////////*****************************Initialize frequenct list*************//////////////////////////////
-    initial
-    begin
-        for (ii = 0; ii < ROWS; ii = ii + 1)
-        begin
-            for (jj = 0; jj < COLS; jj = jj + 1)
-            begin
-                for (kk = 0; kk < NUM_CLASSES; kk = kk + 1)
-                begin
-                    class_frequency_list[ii][jj][kk] = 0;
+    reg variable_init_en=1;
+    always @(posedge clk) begin
+        if (variable_init_en) begin
+        
+            for (ii = 0; ii < ROWS; ii = ii + 1) begin
+                for (jj = 0; jj < COLS; jj = jj + 1) begin
+                    for (kk = 0; kk < NUM_CLASSES; kk = kk + 1) begin
+                        class_frequency_list[ii][jj][kk] = 0;
+                    end
                 end
             end
-        end
         $display("class frequnecy list initialized");
+        variable_init_en=0;
+        end
     end
     
     ///////////////////////////////////////////////////////****************Start LFSR**************/////////////////////////////////////
@@ -184,8 +182,7 @@ module isom
     genvar dim_i;
     
     generate
-        for(dim_i=1; dim_i <= DIM; dim_i=dim_i+1)
-        begin
+        for(dim_i=1; dim_i <= DIM; dim_i=dim_i+1) begin
             lfsr #(.NUM_BITS(RAND_NUM_BIT_LEN)) lfsr_rand
             (
                 .i_Clk(clk),
@@ -198,10 +195,8 @@ module isom
     endgenerate
     
     ///////////////////////////////////////////////////////*******************Start Training***********/////////////////////////////////////
-    always @(posedge clk)
-    begin
-        if (training_en)
-        begin
+    always @(posedge clk) begin
+        if (training_en) begin
             $display("training_en");
             iteration = -1;
             next_iteration_en = 1;
@@ -209,10 +204,8 @@ module isom
         end
     end
     
-    always @(posedge clk)
-    begin
-        if (next_iteration_en)
-        begin
+    always @(posedge clk) begin
+        if (next_iteration_en) begin
             t1 = -1; // reset trainset pointer
             if (iteration<(TOTAL_ITERATIONS-1)) begin
                 iteration = iteration + 1;
@@ -230,15 +223,12 @@ module isom
     
     always @(posedge clk)
     begin
-        if (next_x_en && !classification_en)
-        begin                
-            if (t1<TRAIN_ROWS-1)
-            begin        
+        if (next_x_en && !classification_en) begin                
+            if (t1<TRAIN_ROWS-1) begin        
                 t1 = t1 + 1;
                 dist_enable = 1;
             end            
-            else
-            begin
+            else begin
                 $display("next_iteration_en ", iteration); 
                 next_iteration_en = 1;  
             end
@@ -419,7 +409,7 @@ module isom
         end
     end
     
-    reg signed [2*DIM:0] temp[DIM-1:0];
+    reg signed [2*DIGIT_DIM:0] temp;
     integer digit;
 
     always @(posedge clk)
@@ -433,14 +423,14 @@ module isom
                 for (digit=0; digit<DIM; digit=digit+1) begin
                    if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] < update_prob) begin                        
                         seed_en = 0;
-                        temp[digit] = weights[bmu_i][bmu_j][digit] + trainX[t1][digit];
+                        temp = weights[bmu_i][bmu_j][digit] + trainX[t1][digit];
                         
-                        if (temp[digit] > k_value) 
+                        if (temp > k_value) 
                             weights[bmu_i][bmu_j][digit] = k_value;
-                        else if (temp[digit] < -k_value) 
+                        else if (temp < -k_value) 
                             weights[bmu_i][bmu_j][digit] = -k_value;
                         else 
-                            weights[bmu_i][bmu_j][digit] = temp[digit];
+                            weights[bmu_i][bmu_j][digit] = temp;
                     end
                 end                
             end
@@ -645,7 +635,7 @@ module isom
     integer fd;    
     always @(posedge clk) begin
         if (write_en) begin
-            fd = $fopen("/home/aari/Projects/Vivado/fpga_som/isom/weight_out.data", "w");
+            fd = $fopen("/home/mad/Documents/fpga-isom/isom/weight_out.data", "w");
             i=0; j=0; k=0;
             for (i=0; i<=ROWS-1; i=i+1) begin
                 for (j=0; j<=COLS-1; j=j+1) begin

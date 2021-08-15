@@ -15,7 +15,7 @@ module tsom_tb();
     reg [32:0] i=0;
     initial 
     begin
-        for (i=0;i<100_000; i=i+1)
+        for (i=0;i<1000_000; i=i+1)
         begin
             clk = ~clk;
             #10;

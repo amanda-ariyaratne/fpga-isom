@@ -1,13 +1,17 @@
 `timescale 1ns / 1ps
 
-module isom_tb3();
+module test_tb(
+    );
+    
     reg clk = 0;
     reg reset = 0;
     wire [8:0] prediction;
+    wire completed;
     
-    isom uut(
+    test uut(
         .clk(clk),
-        .prediction(prediction)
+        .prediction(prediction),
+        .completed(completed)
     );
     
     reg [32:0] i=0;
@@ -17,8 +21,8 @@ module isom_tb3();
         begin
             clk = ~clk;
             #10;
+            if (completed)
+                $finish;
         end
     end
-    
-
 endmodule
