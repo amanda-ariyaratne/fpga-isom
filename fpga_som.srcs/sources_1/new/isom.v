@@ -5,13 +5,13 @@ module isom
     #(
         parameter DIM = 1000,
         parameter LOG2_DIM = 10,    // log2(DIM)
-        parameter DIGIT_DIM = 2,
+        parameter DIGIT_DIM = 2,    // should be log2 of k
         parameter signed k_value = 1,
         
-        parameter ROWS = 5,
-        parameter LOG2_ROWS = 3,   // log2(ROWS)
-        parameter COLS = 5,
-        parameter LOG2_COLS = 3,     
+        parameter ROWS = 10,
+        parameter LOG2_ROWS = 4,   // log2(ROWS)
+        parameter COLS = 10,
+        parameter LOG2_COLS = 4,     
         
         parameter TRAIN_ROWS = 75,
         parameter LOG2_TRAIN_ROWS = 7, // log2(TRAIN_ROWS)
@@ -21,19 +21,19 @@ module isom
         parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 1+1, // log2(NUM_CLASSES)  
         
-        parameter TOTAL_ITERATIONS=4,              
-        parameter LOG2_TOT_ITERATIONS = 4,
+        parameter TOTAL_ITERATIONS=20,              
+        parameter LOG2_TOT_ITERATIONS = 6,
         
         parameter INITIAL_NB_RADIUS = 3,
         parameter NB_RADIUS_STEP = 1,
         parameter LOG2_NB_RADIUS = 3,
-        parameter ITERATION_NB_STEP = 3, // total_iterations / nb_radius_step
+        parameter ITERATION_NB_STEP = 5, // total_iterations / nb_radius_step
         
         parameter INITIAL_UPDATE_PROB = 1000,
-        parameter UPDATE_PROB_STEP = 200,
+        parameter UPDATE_PROB_STEP = 50,
         parameter LOG2_UPDATE_PROB = 10,
         parameter ITERATION_STEP = 1,          
-        parameter STEP = 4,
+        parameter STEP = 19,
         
         parameter RAND_NUM_BIT_LEN = 10
     )
@@ -282,7 +282,11 @@ module isom
     reg [LOG2_DIM-1:0] iii = 0; 
     
     reg [LOG2_DIM:0] hamming_distance;
-    reg [LOG2_DIM:0] min_distance = DIM;   
+    reg [LOG2_DIM:0] min_distance = DIM;  
+    
+    reg [LOG2_DIM:0] dot_product;
+    reg [LOG2_DIM:0] w_l2_norm;
+     
     reg [LOG2_DIM:0] distances [ROWS-1:0][COLS-1:0];       
     reg [LOG2_COLS:0] minimum_distance_indices [(ROWS*COLS-1):0][1:0];
     reg [LOG2_DIM-1:0] min_distance_next_index = 0;
@@ -303,6 +307,10 @@ module isom
             k = 0;
             min_distance_next_index = 0; // reset index
             min_distance = DIM;
+            
+            dot_product = 0;
+            w_l2_norm = 0;
+            
             for (i=0;i<ROWS;i=i+1)
             begin
                 for (j=0;j<COLS;j=j+1)
@@ -315,9 +323,16 @@ module isom
                         hamming_distance = hamming_distance + (weights[i][j][k]*trainX[t1][k] == 2'b11 ? 2'b01 : 2'b00);
                         // get zero count
                         non_zero_count = non_zero_count + (weights[i][j][k] == 2'b00 ? 2'b00 : 2'b01); 
+                        
+                        dot_product = dot_product + weights[i][j][k]*trainX[t1][k];
+                        
+                        // w_l2_norm = w_l2_norm + (weights[i][j][k]*weights[i][j][k]);
+                        
                     end // k
                     
-                    distances[i][j] = hamming_distance;
+//                    distances[i][j] = hamming_distance;
+
+                    distances[i][j] = DIM - dot_product;
                     l0_norms[i][j] = non_zero_count;
                     
                     // get minimum distance index list
@@ -564,6 +579,8 @@ module isom
             k = 0;
             min_distance_next_index = 0; // reset index
             min_distance = DIM;
+            
+            dot_product = 0;
             for (i=0;i<ROWS;i=i+1)
             begin
                 for (j=0;j<COLS;j=j+1)
@@ -576,9 +593,11 @@ module isom
                         hamming_distance = hamming_distance + (weights[i][j][k]*testX[t2][k] == 2'b11 ? 2'b01 : 2'b00);
                         // get zero count
                         non_zero_count = non_zero_count + (weights[i][j][k] == 2'b00 ? 2'b00 : 2'b01); 
+                        
+                        dot_product = dot_product + weights[i][j][k]*trainX[t1][k];
                     end // k
                     
-                    distances[i][j] = hamming_distance;
+                    distances[i][j] = DIM - dot_product;
                     l0_norms[i][j] = non_zero_count;
                     
                     // get minimum distance index list

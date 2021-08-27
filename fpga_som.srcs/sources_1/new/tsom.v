@@ -8,10 +8,10 @@ module tsom
         parameter DIGIT_DIM = 2,
         parameter signed k_value = 1,
         
-        parameter ROWS = 5,
-        parameter LOG2_ROWS = 3,   // log2(ROWS)
-        parameter COLS = 5,
-        parameter LOG2_COLS = 3,     
+        parameter ROWS = 10,
+        parameter LOG2_ROWS = 4,   // log2(ROWS)
+        parameter COLS = 10,
+        parameter LOG2_COLS = 4,     
         
         parameter TRAIN_ROWS = 75,
         parameter LOG2_TRAIN_ROWS = 7, // log2(TRAIN_ROWS)
@@ -22,12 +22,12 @@ module tsom
         parameter LOG2_NUM_CLASSES = 1+1, // log2(NUM_CLASSES)  
         
         parameter TOTAL_ITERATIONS=4,              
-        parameter LOG2_TOT_ITERATIONS = 4,
+        parameter LOG2_TOT_ITERATIONS = 3,
         
         parameter INITIAL_NB_RADIUS = 3,
         parameter NB_RADIUS_STEP = 1,
         parameter LOG2_NB_RADIUS = 3,
-        parameter ITERATION_NB_STEP = 3, // total_iterations / nb_radius_step
+        parameter ITERATION_NB_STEP = 1, // total_iterations / nb_radius_step
         
         parameter INITIAL_UPDATE_PROB = 1000,
         parameter UPDATE_PROB_STEP = 200,
@@ -497,7 +497,7 @@ module tsom
                             most_freq = class_frequency_list[i][j][k];
                         end
                     end
-                    if (class_labels[i][j] == NUM_CLASSES-1) /////////// hardcoded default value
+                    if (class_labels[i][j] == NUM_CLASSES) /////////// hardcoded default value
                     begin                        
                         // reset array
                         for(k=0;k<=NUM_CLASSES-1;k=k+1)
