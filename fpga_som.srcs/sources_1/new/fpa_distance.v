@@ -3,6 +3,7 @@
 module fpa_distance
 (
     input wire clk,
+    input wire en,
     input wire reset,
     input wire [31:0] num1,
     input wire [31:0] num2,
@@ -43,14 +44,16 @@ fp_multiplier square_unit(
     .is_done(square_done)
 );
 
-always @(posedge clk) begin   
-    sub_in_1 = num1;
-    sub_in_2 = num2;
-    square_in = subtraction_out;
-    square = square_out;
-    
-    if (square_done) begin
-        done = 1;
+always @(posedge clk) begin 
+    if (en) begin  
+        sub_in_1 = num1;
+        sub_in_2 = num2;
+        square_in = subtraction_out;
+        square = square_out;
+        
+        if (square_done) begin
+            done = 1;
+        end
     end
 end
 

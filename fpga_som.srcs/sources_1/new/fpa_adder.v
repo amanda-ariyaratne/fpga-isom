@@ -3,6 +3,8 @@
 module fpa_adder
 (
     input wire clk,
+    input wire en,
+    input wire reset,
     input wire [31:0] num1,
     input wire [31:0] num2,
     output wire [31:0] num_out,
@@ -33,9 +35,13 @@ reg done=0;
 assign is_done=done;
 assign num_out = summation;
 
+always @(posedge reset) begin
+    done=0;
+    normalize=0;    
+end
+
 always @(posedge clk) begin
-    if (init) begin  
-     
+    if (en && init) begin  
             // compare exponents
             if (num1[30:23] > num2[30:23])
                 bigger = 1;
@@ -90,7 +96,6 @@ always @(posedge clk) begin
             end
 
             else if (sign1 != sign2) begin
-                $display("Diff");
                 man_sum = m1 - m2;    
                 summation[31] = sign1; 
             end

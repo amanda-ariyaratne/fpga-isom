@@ -57,6 +57,10 @@ module som
     reg [1:0] class_label_en=0;
     reg write_en = 0;
     reg is_completed = 0;
+    reg iterate_en=0;
+    reg bmu_en=0;
+    reg classify_init_en=0;
+    reg test_mode=0;
     
     ///////////////////////////////////////////////////////*******************Other variables***********/////////////////////////////////////
     
@@ -308,44 +312,30 @@ module som
     reg [31:0] distance_in_2;
     wire [31:0] distance_out;
     wire distance_done=0;
-    reg reset;
-    
-    fpa_distance euclidean_distance(
-        .clk(clk),
-        .reset(reset),
-        .num1(distance_in_1),
-        .num2(distance_in_2),
-        .num_out(distance_out),
-        .is_done(distance_done)
-    );    
-    
-    reg iterate_en=0;
-    reg bmu_en=0;
-    
-    always @(posedge clk)
-    begin
-        if (dist_enable) begin
-            i = 0;
-            j = 0;
-            k = 0;
-            min_distance_next_index = 0;
-            min_distance = p_inf;
-            
-            reset=1;
-            dist_enable=0;
-            iterate_en=1;
-        end
-    end
+    reg distance_en=0;
+    reg distance_reset;
     
     integer assign_i;
     reg [DIGIT_DIM-1:0] comp_in_1;
     reg [DIGIT_DIM-1:0] comp_in_2;
     wire [1:0] comp_out;
     wire comp_done=0;
+    reg comp_en=0;
     reg comp_reset=1;
+    
+    fpa_distance euclidean_distance(
+        .clk(clk),
+        .en(distance_en),
+        .reset(distance_reset),
+        .num1(distance_in_1),
+        .num2(distance_in_2),
+        .num_out(distance_out),
+        .is_done(distance_done)
+    );   
     
     fpa_comparator get_max(
         .clk(clk),
+        .en(comp_en),
         .reset(comp_reset),
         .num1(comp_in_1),
         .num2(comp_in_2),
@@ -355,59 +345,70 @@ module som
     
     always @(posedge clk)
     begin
-        if (iterate_en || distance_done) begin
+        if (dist_enable) begin
+            i = 0;
+            j = 0;
+            min_distance_next_index = 0;
+            min_distance = p_inf;
+            dist_enable=0;
+            iterate_en=1;
+        end
+    end
+    
+    always @(posedge clk) begin
+        if (iterate_en) begin
+            distance_reset=1; 
+            comp_reset=1; 
+            for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
+                distance_in_1[assign_i] = weights[i][j][assign_i];
+                distance_in_2[assign_i] = trainX[t1][assign_i];
+            end
+            distance_en=1;            
             iterate_en=0;
+        end
+    end
+    
+    always @(posedge clk) begin
+        if (distance_done) begin
+            distance_en=0;
+
+            comp_in_1 = min_distance;
+            comp_in_2 = distance_out;
+            comp_en = 1;
             
-            if (distance_done) begin
+            if (comp_done) begin
+                comp_en=0;
+                
+                distance_reset=1;
                 comp_reset=1;
-                comp_in_1 = min_distance;
-                comp_in_2 = distance_out;
-                if (comp_done) begin
-                    if (comp_out==0) begin
-                        minimum_distance_indices[min_distance_next_index][1] = i;
-                        minimum_distance_indices[min_distance_next_index][0] = j;
-                        min_distance_next_index = min_distance_next_index + 1;
-                    
-                    end else if (comp_out==1) begin
-                        min_distance = distance_out;
-                        minimum_distance_indices[0][1] = i;
-                        minimum_distance_indices[0][0] = j;                        
-                        min_distance_next_index = 1;
-                    end
-                    
-                    if (j==COLS-1) begin
-                        j=0;
-                        i=i+1;
-                    end else begin
-                        j=j+1;
-                    end
-                    
-                    if (i==ROWS-1) begin
-                        bmu_en=1;
-                    end else begin
-                        reset=1;
-                        for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
-                            distance_in_1[assign_i] = weights[i][j][assign_i];
-                            distance_in_2[assign_i] = trainX[t1][assign_i];
-                        end
-                    end
+                
+                if (comp_out==0) begin
+                    minimum_distance_indices[min_distance_next_index][1] = i;
+                    minimum_distance_indices[min_distance_next_index][0] = j;
+                    min_distance_next_index = min_distance_next_index + 1;
+                
+                end else if (comp_out==1) begin
+                    min_distance = distance_out;
+                    minimum_distance_indices[0][1] = i;
+                    minimum_distance_indices[0][0] = j;                        
+                    min_distance_next_index = 1;
                 end
-            end
-            
-            if (j==COLS-1) begin
-                j=0;
-                i=i+1;
-            end else begin
-                j=j+1;
-            end
-            
-            if (i==ROWS-1) begin
-                bmu_en=1;
-            end else begin
-                reset=1;
-                for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
-                    distance_in_1[assign_i] = weights[i][j][assign_i];
-                    distance_in_2[assign_i] = trainX[t1][assign_i];
+                
+                if (j==COLS-1) begin
+                    j=0;
+                    i=i+1;
+                end else begin
+                    j=j+1;
+                end
+                
+                if (i==ROWS-1) begin
+                    bmu_en=1;
+                end else begin
+                    for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
+                        distance_in_1[assign_i] = weights[i][j][assign_i];
+                        distance_in_2[assign_i] = trainX[t1][assign_i];
+                    end
+                    distance_en=1;
                 end
             end
         end
@@ -473,28 +474,47 @@ module som
     
     integer digit;
     
+    reg update_en=0;
+    reg update_reset=0;
+    reg [DIGIT_DIM-1:0] update_in_1;
+    reg [DIGIT_DIM-1:0] update_in_2;
+    wire [DIGIT_DIM-1:0] update_out;
+    wire update_done=0;
     
+    fpa_update_weight update(
+        .clk(clk),
+        .en(update_en),
+        .reset(update_reset),
+        .num1(update_in_1),
+        .num2(update_in_2),
+        .num_out(update_out),
+        .is_done(update_done)
+    );
 
     always @(posedge clk)
     begin    
-        if (nb_search_en) begin  
+        if (nb_search_en && !update_en) begin  
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
             
             if (man_dist <= nb_radius) begin
-                // update neighbourhood
+                update_reset=1;
                 for (digit=0; digit<DIM; digit=digit+1) begin
-                   if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] < update_prob) begin                        
-                        seed_en = 0;
-                        w = weights[bmu_i][bmu_j][digit];
-                        x = trainX[t1][digit];
-                        // write next
-                    end
-                end                
+                   update_in_1[digit] = weights[bmu_i][bmu_j][digit];
+                   update_in_2[digit] = trainX[t1][digit];
+                end  
+                update_en=1;              
             end
-                        
+        end
+    end
+    
+    always @(posedge clk) begin
+        if (update_done) begin
+            update_en=0;
+            update_reset=1;
+            
             bmu_j = bmu_j + 1;
-                                    
+            
             if (bmu_j == bmu_y+nb_radius+1 || bmu_j == COLS) begin
                 bmu_j = (bmu_y-nb_radius) < 0 ? 0 : (bmu_y-nb_radius);                
                 bmu_i = bmu_i + 1;
@@ -578,6 +598,7 @@ module som
             end
             class_label_en = 0;
             test_en = 1;
+            test_mode=1;
             t2 = -1;
         end
     end
@@ -595,6 +616,7 @@ module som
             end            
             else
             begin 
+                test_mode=0;
                 test_en = 0;
                 write_en = 1;            
             end
@@ -602,95 +624,93 @@ module som
     end
     
     reg [LOG2_TEST_ROWS:0] correct_predictions = 0; // should take log2 of test rows
-    reg [LOG2_NUM_CLASSES:0] predictionY[TEST_ROWS-1:0];
-    
+    reg [LOG2_NUM_CLASSES:0] predictionY [TEST_ROWS-1:0];
     reg [LOG2_TEST_ROWS:0] tot_predictions = 0;
     
-    always @(posedge clk)
-    begin
-        if (classify_x_en)
-        begin
+    always @(posedge clk) begin
+        if (classify_x_en) begin
             i = 0;
             j = 0;
-            k = 0;
-            min_distance_next_index = 0; // reset index
-            min_distance = DIM;
-            for (i=0;i<ROWS;i=i+1)
-            begin
-                for (j=0;j<COLS;j=j+1)
-                begin
-                    hamming_distance = 0;
-                    hash_count = 0;
-                    for (k=0;k<DIM;k=k+1)
-                    begin
-                        w = weights[i][j][k];
-                        x = testX[t2][k];
-                        
-                        if (w==0 && x==1)
-                            hamming_distance=hamming_distance+1;
-                        else if (w==1 && x==0)
-                            hamming_distance=hamming_distance+1;
-                            
-                        // get zero count
-                        if (w==2)
-                            hash_count=hash_count+1;  
-                            
-                    end // k
-                    
-//                    distances[i][j] = hamming_distance;
-                    hash_counts[i][j] = hash_count;
-                    
-                    // get minimum distance index list
-                    if (min_distance == hamming_distance) begin
-                        minimum_distance_indices[min_distance_next_index][1] = i;
-                        minimum_distance_indices[min_distance_next_index][0] = j;
-                        min_distance_next_index = min_distance_next_index + 1;
-                    end
-                    
-                    if (min_distance>hamming_distance) begin
-                        min_distance = hamming_distance;
-                        minimum_distance_indices[0][1] = i;
-                        minimum_distance_indices[0][0] = j;                        
-                        min_distance_next_index = 1;
-                    end
-                end //j                
-            end // i
+            min_distance_next_index = 0;
+            min_distance = p_inf;
+            classify_x_en=0;
+            classify_init_en=1;
+        end
+    end
+    
+    always @(posedge clk) begin
+        if (classify_init_en) begin
+            distance_reset=1; 
+            comp_reset=1; 
+            for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
+                distance_in_1[assign_i] = weights[i][j][assign_i];
+                distance_in_2[assign_i] = testX[t1][assign_i];
+            end
+            distance_en=1;            
+            classify_init_en=0;
+        end
+    end
+    
+    always @(posedge clk) begin
+        if (distance_done && test_mode) begin
+            distance_en=0;
+
+            comp_in_1 = min_distance;
+            comp_in_2 = distance_out;
+            comp_en = 1;
             
-            // if there are more than one bmu
-            if (min_distance_next_index > 1) begin
-                iii = 0;
-                min_hash_count = DIM-1;
-                for(iii=0;iii<(ROWS*COLS-1); iii=iii+1) begin
-                    if (iii<min_distance_next_index) begin                    
-                        idx_i = minimum_distance_indices[iii][1];
-                        idx_j = minimum_distance_indices[iii][0];
-                        // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
-                        if (hash_counts[idx_i][idx_j] < min_hash_count) begin
-                            min_hash_count = hash_counts[idx_i][idx_j];
-                            bmu[1] = idx_i;
-                            bmu[0] = idx_j;
-                        end
+            if (comp_done) begin
+                comp_en=0;
+                
+                distance_reset=1;
+                comp_reset=1;
+                
+                if (comp_out==0) begin
+                    minimum_distance_indices[min_distance_next_index][1] = i;
+                    minimum_distance_indices[min_distance_next_index][0] = j;
+                    min_distance_next_index = min_distance_next_index + 1;
+                
+                end else if (comp_out==1) begin
+                    min_distance = distance_out;
+                    minimum_distance_indices[0][1] = i;
+                    minimum_distance_indices[0][0] = j;                        
+                    min_distance_next_index = 1;
+                end
+                
+                if (j==COLS-1) begin
+                    j=0;
+                    i=i+1;
+                end else begin
+                    j=j+1;
+                end
+                
+                if (i==ROWS-1) begin
+                    bmu_en=1;
+                end else begin
+                    for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
+                        distance_in_1[assign_i] = weights[i][j][assign_i];
+                        distance_in_2[assign_i] = testX[t1][assign_i];
                     end
+                    distance_en=1;
                 end
             end
+        end
+    end
+    
+    always @(posedge clk) begin
+        if (bmu_en && test_mode) begin
+            bmu[1] = minimum_distance_indices[0][1];
+            bmu[0] = minimum_distance_indices[0][0];
             
-            else begin // only one minimum distance node is there 
-                bmu[1] = minimum_distance_indices[0][1];
-                bmu[0] = minimum_distance_indices[0][0];
-            end
-            
-            // check correctness
             if (class_labels[bmu[1]][bmu[0]] == testY[t2])
             begin
                 correct_predictions = correct_predictions + 1;                
             end
             
-            $display("pred ", class_labels[bmu[1]][bmu[0]], " actual ", testY[t2]);   
-             
-            predictionY[t2] = class_labels[bmu[1]][bmu[0]];     
-            classify_x_en = 0;
+            predictionY[t2] = class_labels[bmu[1]][bmu[0]];  
+            bmu_en = 0;   
             test_en = 1;
-        end        
+        end
     end
     
     integer fd;    

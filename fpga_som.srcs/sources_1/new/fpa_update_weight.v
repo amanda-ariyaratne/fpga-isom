@@ -3,6 +3,7 @@
 module fpa_update_weight
 (
     input wire clk,
+    input wire en,
     input wire reset,
     input wire [31:0] weight,
     input wire [31:0] train_row,
@@ -10,6 +11,13 @@ module fpa_update_weight
     output wire [1:0] num_out,
     output wire is_done    
 );
+
+reg [31:0] out;
+
+reg en_1=1;
+reg en_2=0;
+reg en_3=0;
+reg en_4=0;
 
 reg done=0;
 
@@ -25,8 +33,12 @@ wire [31:0] mul_out;
 reg mul_reset;
 wire [1:0] mul_done;
 
+reg en_add=0;
+reg en_mul=0;
+
 fpa_adder add(
     .clk(clk),
+    .en(en_add),
     .reset(add_reset),
     .num1(add_in_1),
     .num2(add_in_2),
@@ -36,6 +48,7 @@ fpa_adder add(
 
 fpa_multiplier multiply(
     .clk(clk),
+    .en(en_mul),
     .reset(mul_reset),
     .num1(mul_in_1),
     .num2(mul_in_2),
@@ -43,26 +56,55 @@ fpa_multiplier multiply(
     .is_done(mul_done)
 );
 
-reg [31:0] out;
-
-always @(posedge clk) begin
-    add_in_1 = weight;
-    add_in_2 = train_row;
-    add_in_2[31] = 1; // indicate subtraction
-    
-    if (add_done) begin
-        mul_in_1 = add_out;
-        mul_in_2 = alpha;
-        
-        if (mul_done) begin
-            
-        end
-    end
-    
-end
-
 always @(posedge reset) begin
     done = 0;
+end
+
+always @(posedge clk) begin
+    if (en && en_1) begin
+        add_reset=1;
+        add_in_1 = weight;
+        add_in_2 = train_row;
+        add_in_2[31] = 1; // indicate subtraction
+        en_add = 1; // on the adder module
+        
+        en_1=0; // off this block
+        en_2=1; // on next block
+    end
+end
+
+always @(posedge clk) begin
+    if (en && en_2 && add_done) begin
+        en_add=0; // off adder module
+        
+        mul_reset=1;
+        mul_in_1 = add_out;
+        mul_in_2 = alpha;
+        en_mul = 1; // on the adder module
+        
+        en_2=0; // off this block
+        en_3=1; // on next block
+    end
+end
+
+always @(posedge clk) begin
+    if (en && en_3 && mul_done) begin
+        en_mul=0; // off multi module
+        
+        add_reset=1;
+        add_in_1 = weight;
+        add_in_2 = mul_out;
+        en_add = 1; // on the adder module
+        
+        en_3=0; // off this block
+        en_4=1; // on next block
+    end
+end
+
+always @(posedge clk) begin
+    if (en && en_4 && add_done) begin
+        done=1;
+    end
 end
 
 endmodule
