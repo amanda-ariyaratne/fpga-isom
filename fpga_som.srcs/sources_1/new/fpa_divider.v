@@ -60,9 +60,11 @@ module fpa_divider(
 			    exp2 = num2[30:23];
 			    man2 = {1'b1, num2[22:0]};
 		    end
-
+            $display("1");
             exp_out = exp1 - exp2 + 127;
+            $display("2", exp_out);
             division = man1 / man2;
+            $display("3", division);
 
             if (division[23] == 1) begin
                 division = division << 0;
