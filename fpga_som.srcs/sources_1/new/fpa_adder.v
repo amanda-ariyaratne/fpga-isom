@@ -5,7 +5,8 @@ module fpa_adder
     input wire clk,
     input wire [31:0] num1,
     input wire [31:0] num2,
-    output wire [31:0] num_out
+    output wire [31:0] num_out,
+    output wire is_done
 );
 
 reg [31:0] summation;
@@ -23,9 +24,13 @@ reg sign2;
 reg overflow;
 reg set_high_bit=0;
 reg init=1;
+reg done=0;
 
 reg [23:0] man_sum;
 reg [5:0] shift_count=0;
+
+assign num_out = summation;
+assign is_done = done;
 
 always @(posedge clk) begin
     if (init) begin  
@@ -40,11 +45,13 @@ always @(posedge clk) begin
         if ((e1 == 0) && (m1[22:0] == 0)) begin
             summation = 0;
             init = 0;
+            done=1;
         end
         
         else if ((e2 == 0) && (m2[22:0] == 0)) begin
             summation = 0;
             init = 0;
+            done=1;
         end
         
         else begin       
@@ -83,6 +90,8 @@ always @(posedge clk) begin
             exp_diff = e1-e2;
             if (exp_diff > 8) begin
                 summation = n1;
+                init = 0;
+                done=1;
             end
             
             // shift smaller one with number of exps diffs
@@ -90,6 +99,7 @@ always @(posedge clk) begin
             
             // signes of the inputs are the same
             if (sign1 == sign2 && sign2 == 0) begin
+                $display("Plus");
                 {overflow, man_sum} = m1 + m2;    
                 man_sum = man_sum >> overflow;
                 if (overflow == 1)
@@ -100,6 +110,7 @@ always @(posedge clk) begin
                 summation[30: 23] = e1+overflow+127;
             end
             else if (sign1 == sign2 && sign2 == 1) begin
+                $display("Minus");
                 {overflow, man_sum} = m1 - m2;    
                 man_sum = man_sum >> overflow;
                 if (overflow == 1)
@@ -110,6 +121,7 @@ always @(posedge clk) begin
                 summation[30: 23] = e1+overflow+127;       
             end
             else if (sign1 != sign2) begin
+                $display("Diff");
                 man_sum = m1 - m2;    
                 summation[31] = sign1; 
             end
@@ -124,6 +136,7 @@ always @(posedge clk) begin
     if (set_high_bit) begin
         if (sign1 == sign2) begin
             set_high_bit=0;
+            done=1;
         end
         if (man_sum[23] == 0) begin
             shift_count=shift_count+1;
@@ -133,10 +146,9 @@ always @(posedge clk) begin
             summation[22: 0] =  man_sum[22: 0];
             summation[30: 23] = e1-shift_count+127;
             set_high_bit=0;
+            done=1;
         end        
     end
 end
-
-assign num_out = summation;
 
 endmodule

@@ -1,17 +1,18 @@
 `timescale 1ns / 1ps
 
-
-module fp_adder_tb();
+module fpa_tb();
     reg clk=0;
-    reg [31:0] num1 = 32'b01110010111111100001000000000000;
-    reg [31:0] num2 = 32'b01110010111111101001000000000000;
+    reg [31:0] num1 = 32'b01000001000111000000000000000000;
+    reg [31:0] num2 = 32'b00111111000100000000000000000000;
     wire [31:0] sum;
+    wire done;
     
-    fpa_comparator uut(
+    fpa_adder uut(
         .clk(clk),
         .num1(num1),
         .num2(num2),
-        .num_out(sum)
+        .num_out(sum),
+        .is_done(done)
     );
     
     integer i=0;
@@ -21,6 +22,8 @@ module fp_adder_tb();
         begin
             clk = ~clk;
             #10;
+            if (done)
+                $finish;
         end
     end
 endmodule

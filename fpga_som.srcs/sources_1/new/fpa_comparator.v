@@ -3,9 +3,11 @@
 module fpa_comparator
 (
     input wire clk,
+    input wire reset,
     input wire [31:0] num1,
     input wire [31:0] num2,
-    output wire [1:0] num_out
+    output wire [1:0] num_out,
+    output wire is_done
 );
 
 reg [31:0] n1;
@@ -19,6 +21,10 @@ reg sign2;
 reg [31:0] out;
 
 reg [1:0] max = 0;
+reg done=0;
+
+assign is_done = done;
+assign num_out = max;
 
 always @(posedge clk) begin
     m1[22:0] = num1[22:0];
@@ -66,8 +72,11 @@ always @(posedge clk) begin
                 max = 0;
         end
     end
+    done = 1;
 end
 
-assign num_out = max;
+always @(posedge reset) begin
+    done = 0;
+end
 
 endmodule

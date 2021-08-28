@@ -3,11 +3,11 @@
 Nov 18 2020
 09:20:35
 /home/mad/Documents/fpga-isom/fpga_som.sim/sim_1/behav/xsim/glbl.v,1627715504,verilog,,,,glbl,,,,,,,,
-/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fp_adder_tb.v,1630089019,verilog,,,,fp_adder_tb,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fp_adder_tb.v,1630124822,verilog,,,,fp_adder_tb,,,,,,,,
 /home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/isom_tb.v,1628924986,verilog,,,,isom_tb,,,,,,,,
 /home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/test_tb.v,1629021652,verilog,,,,test_tb,,,,,,,,
 /home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/tsom_tb.v,1629012725,verilog,,,,tsom_tb,,,,,,,,
-/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_adder.v,1630084642,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fp_adder_tb.v,,fpa_adder,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_adder.v,1630125193,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fp_adder_tb.v,,fpa_adder,,,,,,,,
 /home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_comparator.v,1630088625,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fp_adder_tb.v,,fpa_comparator,,,,,,,,
 /home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_divider.v,1630086857,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fp_adder_tb.v,,fpa_divider,,,,,,,,
 /home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_multiplier.v,1630086417,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fp_adder_tb.v,,fpa_multiplier,,,,,,,,
