@@ -24,12 +24,17 @@ module som
         
         parameter INITIAL_NB_RADIUS = 3,
         parameter NB_RADIUS_STEP = 1,
-        parameter LOG2_NB_RADIUS = 3,
+        parameter LOG2_NB_RADIUS = 2,
         parameter ITERATION_NB_STEP = 1,
         
-        parameter INITIAL_UPDATE_PROB = 1000,
-        parameter UPDATE_PROB_STEP = 200,
-        parameter LOG2_UPDATE_PROB = 10,
+        parameter INITIAL_ALPHA = 32'b00111111011001100110011001100110, //0.9
+        parameter ALPHA_STEP = 32'b00111101110011001100110011001101,//0.1
+        // 0.9 = 32'b00111111011001100110011001100110
+        // 0.1 - 32'b00111101110011001100110011001101
+        // 0.2 - 32'b00111110010011001100110011001101
+        // 0.05 - 32'b00111101010011001100110011001101
+        
+        parameter LOG2_ALPHA = 32,
         parameter ITERATION_STEP = 1,          
         parameter STEP = 4,
         
@@ -42,7 +47,6 @@ module som
     );
 
     ///////////////////////////////////////////////////////*******************Declare enables***********/////////////////////////////////////
-    
     reg [1:0] training_en = 0;
     reg [1:0] next_iteration_en=0;
     reg [1:0] next_x_en=0;    
@@ -61,10 +65,13 @@ module som
     reg bmu_en=0;
     reg classify_init_en=0;
     reg test_mode=0;
+    reg update_alpha_en=0;
     
     ///////////////////////////////////////////////////////*******************Other variables***********/////////////////////////////////////
     
     reg signed [LOG2_TOT_ITERATIONS:0] iteration;
+    reg signed [LOG2_NB_RADIUS:0] nb_radius = INITIAL_NB_RADIUS;
+    reg signed [LOG2_ALPHA-1:0] update_prob = INITIAL_ALPHA;  
     
     reg [LOG2_ROWS:0] ii = 0;
     reg [LOG2_COLS:0] jj = 0;
@@ -214,13 +221,29 @@ module som
         end
     end
     
+    integer step_i;
     always @(posedge clk)
     begin
         if (next_iteration_en)
         begin
             t1 = -1; // reset trainset pointer
             if (iteration<(TOTAL_ITERATIONS-1)) begin
+                // change current iteration
                 iteration = iteration + 1;
+                
+                // change update alpha
+                for (step_i=1; step_i<=STEP;step_i = step_i+1) begin
+                    if ((iteration==(ITERATION_STEP*step_i))) begin
+                        update_alpha_en=1;
+                    end
+                end
+                // change neighbouhood radius
+                for (step_i=1; step_i<=4;step_i = step_i+1) begin
+                    if ( (iteration==(ITERATION_NB_STEP*step_i) ) ) begin
+                        nb_radius <=  nb_radius-NB_RADIUS_STEP;
+                    end
+                end
+                
                 next_x_en = 1;                
             end
             else begin
@@ -230,6 +253,38 @@ module som
             end
             
             next_iteration_en = 0;            
+        end
+    end
+    
+    reg alpha_reset=0;
+    reg alpha_en=0;
+    reg [DIGIT_DIM-1:0] alpha_in_1;
+    reg [DIGIT_DIM-1:0] alpha_in_2;
+    wire [DIGIT_DIM-1:0] alpha_out;
+    wire alpha_done;
+    
+    fpa_adder alpha_update(
+        .clk(clk),
+        .reset(alpha_reset),
+        .en(alpha_en),
+        .num1(alpha_in_1),
+        .num2(alpha_in_2),
+        .num_out(alpha_out),
+        .is_done(alpha_done)
+    );
+    
+    always @(posedge clk) begin
+        if (update_alpha_en) begin
+            alpha_reset=1;
+            alpha_in_1=update_prob;
+            alpha_in_2=ALPHA_STEP;
+            alpha_en=1;
+            
+            if (alpha_done) begin
+                update_prob = alpha_out;
+                alpha_en=0;
+                update_alpha_en=0;
+            end
         end
     end
     
@@ -434,33 +489,8 @@ module som
     reg signed [LOG2_ROWS+1:0] bmu_x;
     reg signed [LOG2_COLS+1:0] bmu_y;
     reg signed [LOG2_NB_RADIUS+1:0] man_dist; /////////// not sure
-    reg signed [LOG2_NB_RADIUS+1:0] nb_radius = INITIAL_NB_RADIUS;
-    reg signed [LOG2_UPDATE_PROB+1:0] update_prob = INITIAL_UPDATE_PROB;
-    integer signed step_i;
-     
-    // update update probability
-    always @(posedge clk)
-    begin
-        for (step_i=1; step_i<=STEP;step_i = step_i+1)
-        begin
-            if ((iteration<(ITERATION_STEP*step_i)) && (iteration>=(ITERATION_STEP*(step_i-1))))
-            begin
-                update_prob <= UPDATE_PROB_STEP*(STEP-step_i+1);
-            end
-        end
-    end
     
-    // update neighbourhood radius
-    always @(posedge clk)
-    begin
-        for (step_i=1; step_i<=4;step_i = step_i+1)
-        begin
-            if ( (iteration<(ITERATION_NB_STEP*step_i)) && (iteration>= (ITERATION_NB_STEP*(step_i-1)) ) ) begin
-                nb_radius <=  NB_RADIUS_STEP*(4-step_i);
-            end
-        end
-    end
-    
+   
     always @(posedge clk)
     begin    
         if (init_neigh_search_en) begin
