@@ -4,18 +4,14 @@ Running: /opt/Xilinx/Vivado/2020.2/bin/unwrapped/lnx64.o/xelab -wto c97a37bdf686
 Using 8 slave threads.
 Starting static elaboration
 Pass Through NonSizing Optimizer
-WARNING: [VRFC 10-3091] actual bit length 128 differs from formal bit length 32 for port 'weight' [/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/fpa_tb.v:20]
-WARNING: [VRFC 10-3091] actual bit length 128 differs from formal bit length 32 for port 'train_row' [/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/fpa_tb.v:21]
-WARNING: [VRFC 10-3091] actual bit length 128 differs from formal bit length 32 for port 'alpha' [/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/fpa_tb.v:22]
-WARNING: [VRFC 10-3091] actual bit length 2 differs from formal bit length 1 for port 'is_done' [/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/fpa_update_weight.v:50]
-WARNING: [VRFC 10-3091] actual bit length 2 differs from formal bit length 1 for port 'is_done' [/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/fpa_update_weight.v:60]
 Completed static elaboration
 Starting simulation data flow analysis
 Completed simulation data flow analysis
 Time Resolution for simulation is 1ps
 Compiling module xil_defaultlib.fpa_adder
 Compiling module xil_defaultlib.fpa_multiplier
-Compiling module xil_defaultlib.fpa_update_weight
+Compiling module xil_defaultlib.fpa_distance
+Compiling module xil_defaultlib.fpa_euclidean_distance_default
 Compiling module xil_defaultlib.fpa_tb
 Compiling module xil_defaultlib.glbl
 Built simulation snapshot fpa_tb_behav

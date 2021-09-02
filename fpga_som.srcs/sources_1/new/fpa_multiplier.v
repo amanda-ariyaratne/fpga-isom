@@ -84,7 +84,6 @@ begin
                 man_out = 0;
             end
         end
-        $display("num out ", num_out);
         done = 1;
         init = 0;
     end

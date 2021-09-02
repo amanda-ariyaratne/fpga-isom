@@ -30,43 +30,50 @@ wire [DIGIT_DIM*DIM-1:0] dist_sqr_done;
 
 wire [DIM-1:0] dist_sqr_is_done;
 
-assign dist_sqr_is_done[DIM-1:0] = {dist_sqr_done[DIGIT_DIM*4-1], dist_sqr_done[DIGIT_DIM*3-1], dist_sqr_done[DIGIT_DIM*2-1], dist_sqr_done[DIGIT_DIM*1-1]};
+genvar k;
+generate
+    for (k=1; k<=DIM; k=k+1) begin
+        assign dist_sqr_is_done[k-1] = dist_sqr_done[DIGIT_DIM*k-1];
+    end
+endgenerate
+
 assign dist_sqr_in_1 = weight;
 assign dist_sqr_in_2 = trainX;
 
 genvar i;
 generate
-    for (i=0; i<DIM*DIGIT_DIM; i=i+DIGIT_DIM) begin
+    for (i=DIGIT_DIM; i<=DIM*DIGIT_DIM; i=i+DIGIT_DIM) begin
         fpa_distance dist_sqr(
             .clk(clk),
             .en(dist_sqr_en),
             .reset(dist_sqr_reset),
-            .num1(dist_sqr_in_1[i +:DIGIT_DIM]),
-            .num2(dist_sqr_in_2[i +:DIGIT_DIM]),
-            .num_out(dist_sqr_out[i +:DIGIT_DIM]),
-            .is_done(dist_sqr_done[i])
+            .num1(dist_sqr_in_1[i-1 -:DIGIT_DIM]),
+            .num2(dist_sqr_in_2[i-1 -:DIGIT_DIM]),
+            .num_out(dist_sqr_out[i-1 -:DIGIT_DIM]),
+            .is_done(dist_sqr_done[i-1])
         );
     end
 endgenerate
 
 always @(posedge clk) begin 
     if (en && init) begin
-        $display("begin");
         dist_sqr_en=1;
         dist_sqr_reset=0;
-        if (dist_sqr_is_done == {(DIM){1'b1}}) begin
-            dist_sqr_en=0;
-            add_all_init=1;
-            // dist_sqr_reset=1;
-            init=0;
-            $display("begin end ", init);
-        end
+        init=0;
+    end
+end
+
+always @(posedge clk) begin 
+    if (dist_sqr_is_done == {(DIM){1'b1}}) begin
+        dist_sqr_en=0;
+        dist_sqr_reset=1;
+        add_all_init=1;
     end
 end
 
 reg add_all_en=0;
 reg add_all_reset=0;
-reg [DIGIT_DIM-1:0] add_all_in_1=32'b00000000_00000000_00000000_00000000;
+reg [DIGIT_DIM-1:0] add_all_in_1=0;
 reg [DIGIT_DIM-1:0] add_all_in_2;
 wire [DIGIT_DIM-1:0] add_all_out;
 wire add_all_done=0;
@@ -81,23 +88,24 @@ fpa_adder add_all(
     .is_done(add_all_done)
 );
 
-integer signed j=DIM*DIGIT_DIM-1;
+integer signed j=DIGIT_DIM;
 always @(posedge clk) begin 
     if (add_all_init) begin
-        $display("begin add all");
-        add_all_in_2 = dist_sqr_out[j -:DIGIT_DIM];
+        
+        add_all_in_2 = dist_sqr_out[j-1 -:DIGIT_DIM];
         add_all_en = 1;
         add_all_reset = 0;
-        
+        $display("DRAMA", add_all_done);
         if (add_all_done) begin
+            $display("begin done");
             add_all_en = 0;
             add_all_in_1 = add_all_out;
-            j = j - DIGIT_DIM;
+            j = j + DIGIT_DIM;
             add_all_reset = 1;
             dist_sqr_reset = 1;
         end
         
-        if (j == -1) begin
+        if (j > DIGIT_DIM*DIM) begin
             add_all_init = 0;
             done = 1;
         end

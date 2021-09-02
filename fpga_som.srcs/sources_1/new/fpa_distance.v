@@ -52,7 +52,6 @@ assign num_out = square_out;
 
 always @(posedge clk) begin 
     if (en && init) begin  
-        $display(done);
         sub_in_1 = num1;
         sub_in_2 = num2;
         sub_in_2[31] = 1; // make minus
@@ -72,7 +71,7 @@ always @(posedge clk) begin
     if (square_done) begin 
         done = 1;    
         squrae_en=0;        
-        squrae_reset=1;  
+        squrae_reset=1; 
     end
 end
 
