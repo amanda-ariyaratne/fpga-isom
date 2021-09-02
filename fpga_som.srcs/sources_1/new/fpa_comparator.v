@@ -23,12 +23,14 @@ reg [31:0] out;
 
 reg [1:0] max = 0;
 reg done=0;
+reg init=1;
+
 
 assign is_done = done;
 assign num_out = max;
 
 always @(posedge clk) begin
-    if (en) begin
+    if (en && init) begin
         m1[22:0] = num1[22:0];
         m2[22:0] = num2[22:0];
         m1[23] = 1;
@@ -75,11 +77,13 @@ always @(posedge clk) begin
             end
         end
         done = 1;
+        init = 0;
     end
 end
 
 always @(posedge reset) begin
     done = 0;
+    init = 1;
 end
 
 endmodule

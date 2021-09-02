@@ -16,7 +16,7 @@ module som
         parameter TEST_ROWS = 150,
         parameter LOG2_TEST_ROWS = 8, 
         
-        parameter NUM_CLASSES = 3,
+        parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 2, 
         
         parameter TOTAL_ITERATIONS=4,              
@@ -71,7 +71,7 @@ module som
     
     reg signed [LOG2_TOT_ITERATIONS:0] iteration;
     reg signed [LOG2_NB_RADIUS:0] nb_radius = INITIAL_NB_RADIUS;
-    reg signed [LOG2_ALPHA-1:0] update_prob = INITIAL_ALPHA;  
+    reg signed [LOG2_ALPHA-1:0] alpha = INITIAL_ALPHA;  
     
     reg [LOG2_ROWS:0] ii = 0;
     reg [LOG2_COLS:0] jj = 0;
@@ -116,14 +116,13 @@ module som
     
     ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     initial begin
-        weights_file = $fopen("/home/mad/Documents/fpga-isom/tsom/weights.data","r");
+        weights_file = $fopen("/home/mad/Documents/fpga-isom/som/weights.data","r");
         while (!$feof(weights_file))
         begin
             eof_weight = $fscanf(weights_file, "%b\n",rand_v);
             
-            for(kw=DIM-1;kw>=0;kw=kw-1)
-            begin
-                weights[i][j][kw] = rand_v[(DIGIT_DIM*kw)+1-:DIGIT_DIM];
+            for(kw=DIM;kw>0;kw=kw-1) begin
+                weights[i][j][kw-1] = rand_v[(DIGIT_DIM*kw)+1-:DIGIT_DIM];
             end
             
             j = j + 1;
@@ -138,14 +137,12 @@ module som
     
     ///////////////////////////////////////////////////////*******************Read train vectors***********/////////////////////////////////////
     initial begin
-        trains_file = $fopen("/home/mad/Documents/fpga-isom/tsom/train.data","r");
-        while (!$feof(trains_file))
-            begin        
+        trains_file = $fopen("/home/mad/Documents/fpga-isom/som/train.data","r");
+        while (!$feof(trains_file)) begin        
             eof_train = $fscanf(trains_file, "%b\n",temp_train_v);
             
-            for(k1=DIM-1;k1>=0;k1=k1-1)
-            begin
-                trainX[t1][k1] = temp_train_v[(DIGIT_DIM*k1)+1+LOG2_NUM_CLASSES -:DIGIT_DIM];
+            for(k1=DIM;k1>0;k1=k1-1) begin
+                trainX[t1][k1-1] = temp_train_v[(DIGIT_DIM*k1)+LOG2_NUM_CLASSES-1 -:DIGIT_DIM];
             end
             trainY[t1] = temp_train_v[LOG2_NUM_CLASSES-1:0];
             t1 = t1 + 1;
@@ -156,13 +153,13 @@ module som
 
     ///////////////////////////////////////////////////////*******************Read test vectors***********/////////////////////////////////////
     initial begin
-        test_file = $fopen("/home/mad/Documents/fpga-isom/tsom/test.data","r");
+        test_file = $fopen("/home/mad/Documents/fpga-isom/som/test.data","r");
         while (!$feof(test_file))
         begin
             eof_test = $fscanf(test_file, "%b\n",temp_test_v);
-            for(k2=DIM-1;k2>=0;k2=k2-1)
+            for(k2=DIM;k2>0;k2=k2-1)
             begin
-                testX[t2][k2] = temp_test_v[(DIGIT_DIM*k2)+LOG2_NUM_CLASSES+1 -:DIGIT_DIM];
+                testX[t2][k2-1] = temp_test_v[(DIGIT_DIM*k1)+LOG2_NUM_CLASSES-1 -:DIGIT_DIM];
             end
                 
             testY[t2] = temp_test_v[LOG2_NUM_CLASSES-1:0];
@@ -230,6 +227,7 @@ module som
             if (iteration<(TOTAL_ITERATIONS-1)) begin
                 // change current iteration
                 iteration = iteration + 1;
+                $display("iteration ", iteration);
                 
                 // change update alpha
                 for (step_i=1; step_i<=STEP;step_i = step_i+1) begin
@@ -275,14 +273,14 @@ module som
     
     always @(posedge clk) begin
         if (update_alpha_en) begin
-            alpha_reset=1;
-            alpha_in_1=update_prob;
+            alpha_in_1=alpha;
             alpha_in_2=ALPHA_STEP;
             alpha_en=1;
             
             if (alpha_done) begin
-                update_prob = alpha_out;
+                alpha = alpha_out;
                 alpha_en=0;
+                alpha_reset=1;
                 update_alpha_en=0;
             end
         end
@@ -295,6 +293,7 @@ module som
             if (t1<TRAIN_ROWS-1)
             begin        
                 t1 = t1 + 1;
+                $display("t1 ", t1);
                 dist_enable = 1;
             end            
             else
@@ -363,14 +362,15 @@ module som
     reg [DIGIT_DIM-1:0] w;      
     reg [DIGIT_DIM-1:0] x;  
     
-    reg [31:0] distance_in_1;
-    reg [31:0] distance_in_2;
-    wire [31:0] distance_out;
+    reg [DIGIT_DIM*DIM-1:0] distance_in_1;
+    reg [DIGIT_DIM*DIM-1:0] distance_in_2;
+    wire [DIGIT_DIM-1:0] distance_out;
     wire distance_done=0;
     reg distance_en=0;
     reg distance_reset;
     
-    integer assign_i;
+    integer signed assign_i;
+    integer signed assign_j;
     reg [DIGIT_DIM-1:0] comp_in_1;
     reg [DIGIT_DIM-1:0] comp_in_2;
     wire [1:0] comp_out;
@@ -378,12 +378,12 @@ module som
     reg comp_en=0;
     reg comp_reset=1;
     
-    fpa_distance euclidean_distance(
+    fpa_euclidean_distance euclidean_distance(
         .clk(clk),
         .en(distance_en),
         .reset(distance_reset),
-        .num1(distance_in_1),
-        .num2(distance_in_2),
+        .weight(distance_in_1),
+        .trainX(distance_in_2),
         .num_out(distance_out),
         .is_done(distance_done)
     );   
@@ -412,12 +412,13 @@ module som
     
     always @(posedge clk) begin
         if (iterate_en) begin
-            distance_reset=1; 
-            comp_reset=1; 
-            for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
-                distance_in_1[assign_i] = weights[i][j][assign_i];
-                distance_in_2[assign_i] = trainX[t1][assign_i];
+            for(assign_i=DIM-1; assign_i>0; assign_i=assign_i-1) begin
+                for(assign_j=DIGIT_DIM-1; assign_j>0; assign_j=assign_j-1) begin
+                    distance_in_1[(assign_i*DIM)+assign_j] = weights[i][j][assign_i][assign_j];
+                    distance_in_2[(assign_i*DIM)+assign_j] = trainX[t1][assign_i][assign_j];
+                end                
             end
+            
             distance_en=1;            
             iterate_en=0;
         end
@@ -426,7 +427,7 @@ module som
     always @(posedge clk) begin
         if (distance_done) begin
             distance_en=0;
-
+            $display("Calculated");
             comp_in_1 = min_distance;
             comp_in_2 = distance_out;
             comp_en = 1;
@@ -515,8 +516,9 @@ module som
         .clk(clk),
         .en(update_en),
         .reset(update_reset),
-        .num1(update_in_1),
-        .num2(update_in_2),
+        .weight(update_in_1),
+        .train_row(alpha),
+        .alpha(update_in_2),
         .num_out(update_out),
         .is_done(update_done)
     );
@@ -528,7 +530,7 @@ module som
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
             
             if (man_dist <= nb_radius) begin
-                update_reset=1;
+                
                 for (digit=0; digit<DIM; digit=digit+1) begin
                    update_in_1[digit] = weights[bmu_i][bmu_j][digit];
                    update_in_2[digit] = trainX[t1][digit];
@@ -566,7 +568,6 @@ module som
     begin
         if (class_label_en)
         begin
-            $display("class_label_en");   
             i=0;j=0;k=0;
             for(i=0;i<ROWS;i=i+1)
             begin
@@ -746,7 +747,7 @@ module som
     integer fd;    
     always @(posedge clk) begin
         if (write_en) begin
-            fd = $fopen("/home/mad/Documents/fpga-isom/tsom/weight_out.data", "w");
+            fd = $fopen("/home/mad/Documents/fpga-isom/som/weight_out.data", "w");
             i=0; j=0; k=0;
             for (i=0; i<=ROWS-1; i=i+1) begin
                 for (j=0; j<=COLS-1; j=j+1) begin

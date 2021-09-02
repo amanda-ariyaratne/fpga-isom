@@ -23,8 +23,8 @@ reg [23:0] man2;
 reg [23:0] man_out;
 
 reg [47:0] product;
-
 reg done=0;
+reg init=1;
 
 assign sgn1 = num1[31];
 assign sgn2 = num2[31];
@@ -33,7 +33,7 @@ assign is_done = done;
 
 always @(posedge clk)
 begin
-    if (en) begin
+    if (en && init) begin
         if ((num1[30:23] == 0 && num1[22:0] == 0) || (num2[30:23] == 0 && num2[22:0] == 0)) begin
             sgn_out = 0;
             exp_out = 0;
@@ -84,12 +84,15 @@ begin
                 man_out = 0;
             end
         end
+        $display("num out ", num_out);
         done = 1;
+        init = 0;
     end
 end
 
 always @(posedge reset) begin
     done = 0;
+    init = 1;
 end
 
 endmodule
