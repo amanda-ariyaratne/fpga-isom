@@ -2,6 +2,7 @@
 2020.2
 Nov 18 2020
 09:20:35
+<<<<<<< HEAD
 /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/glbl.v,1605673889,verilog,,,,glbl,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/fp_adder_tb.v,1630131077,verilog,,,,fp_adder_tb,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/tsom_tb.v,1630202410,verilog,,,,tsom_tb,,,,,,,,
@@ -10,3 +11,23 @@ Nov 18 2020
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/lfsr.v,1628260509,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/tsom.v,,lfsr,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/tsom.v,1630233459,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/tsom_tb.v,,tsom,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/tsom_hamming_dist.v,1630232725,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/tsom_tb.v,,tsom_hamming_dist,,,,,,,,
+=======
+/home/mad/Documents/fpga-isom/fpga_som.sim/sim_1/behav/xsim/glbl.v,1627715504,verilog,,,,glbl,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/csom_tb.v,1630238424,verilog,,,,csom_tb,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fpa_tb.v,1630592941,verilog,,,,fpa_tb,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/isom_tb.v,1628924986,verilog,,,,isom_tb,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/test_tb.v,1629021652,verilog,,,,test_tb,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/tsom_tb.v,1629012725,verilog,,,,tsom_tb,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_adder.v,1630595122,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_multiplier.v,,fpa_adder,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_comparator.v,1630168410,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_distance.v,,fpa_comparator,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_distance.v,1630288078,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_euclidean_distance.v,,fpa_distance,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_divider.v,1630086857,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fp_adder_tb.v,,fpa_divider,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_euclidean_distance.v,1630287611,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_multiplier.v,,fpa_euclidean_distance,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_multiplier.v,1630242468,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_update_weight.v,,fpa_multiplier,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/fpa_update_weight.v,1630594242,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/fpa_tb.v,,fpa_update_weight,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/isom.v,1629092735,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/lfsr.v,,isom,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/lfsr.v,1628236356,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/som.v,,lfsr,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/som.v,1630245352,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/csom_tb.v,,som,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/test.v,1629021574,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/test_tb.v,,test,,,,,,,,
+/home/mad/Documents/fpga-isom/fpga_som.srcs/sources_1/new/tsom.v,1629081243,verilog,,/home/mad/Documents/fpga-isom/fpga_som.srcs/sim_1/new/tsom_tb.v,,tsom,,,,,,,,
+>>>>>>> e708146196c625fe227847698e42edbab49199b3
