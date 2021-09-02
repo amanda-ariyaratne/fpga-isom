@@ -35,12 +35,12 @@ reg done=0;
 always @(posedge reset) begin
     done=0;
     init = 1;
-    normalize=0;    
+    normalize=0;  
+    shift_count=0;  
 end
 
 always @(posedge clk) begin
     if (en && init) begin 
-        summation = 0;
         // compare exponents
         if (num1[30:23] > num2[30:23])
             bigger = 1;
@@ -110,10 +110,12 @@ always @(posedge clk) begin
             normalize = 0;
         end
         else if (man_sum[23] == 0) begin
+            $display("Not 1");
             shift_count = shift_count + 1;
             man_sum = man_sum << 1;
         end
         else begin
+            $display(man_sum[23]);
             summation[22: 0] =  man_sum[22: 0];
             summation[30: 23] = e1 - shift_count;
             done=1;

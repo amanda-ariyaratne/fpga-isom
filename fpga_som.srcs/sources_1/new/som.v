@@ -116,7 +116,7 @@ module som
     
     ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     initial begin
-        weights_file = $fopen("/home/mad/Documents/fpga-isom/som/weights.data","r");
+        weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/som/weights.data","r");
         while (!$feof(weights_file))
         begin
             eof_weight = $fscanf(weights_file, "%b\n",rand_v);
@@ -137,7 +137,7 @@ module som
     
     ///////////////////////////////////////////////////////*******************Read train vectors***********/////////////////////////////////////
     initial begin
-        trains_file = $fopen("/home/mad/Documents/fpga-isom/som/train.data","r");
+        trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/som/train.data","r");
         while (!$feof(trains_file)) begin        
             eof_train = $fscanf(trains_file, "%b\n",temp_train_v);
             
@@ -153,7 +153,7 @@ module som
 
     ///////////////////////////////////////////////////////*******************Read test vectors***********/////////////////////////////////////
     initial begin
-        test_file = $fopen("/home/mad/Documents/fpga-isom/som/test.data","r");
+        test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/som/test.data","r");
         while (!$feof(test_file))
         begin
             eof_test = $fscanf(test_file, "%b\n",temp_test_v);
