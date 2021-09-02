@@ -4,5 +4,9 @@ Nov 18 2020
 09:20:35
 /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/glbl.v,1605673889,verilog,,,,glbl,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/fp_adder_tb.v,1630131077,verilog,,,,fp_adder_tb,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/tsom_tb.v,1630202410,verilog,,,,tsom_tb,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/fpa_adder.v,1630131027,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/fp_adder_tb.v,,fpa_adder,,,,,,,,
 /home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/fpa_divider.v,1630124651,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/fp_adder_tb.v,,fpa_divider,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/lfsr.v,1628260509,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/tsom.v,,lfsr,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/tsom.v,1630233459,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/tsom_tb.v,,tsom,,,,,,,,
+/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/tsom_hamming_dist.v,1630232725,verilog,,/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sim_1/new/tsom_tb.v,,tsom_hamming_dist,,,,,,,,

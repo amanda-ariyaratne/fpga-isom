@@ -49,6 +49,7 @@ module tsom
     reg [1:0] next_iteration_en=0;
     reg [1:0] next_x_en=0;    
     reg [1:0] dist_enable = 0;
+    reg [1:0] bmu_search_enable = 0;
     reg [1:0] init_neigh_search_en=0;  
     reg [1:0] nb_search_en=0;
     reg [1:0] test_en = 0;
@@ -74,9 +75,9 @@ module tsom
     ///////////////////////////////////////////////////////*******************File read variables***********/////////////////////////////////////
     
     
-    reg [DIGIT_DIM-1:0] weights [ROWS-1:0][COLS-1:0][DIM-1:0];
-    reg [DIGIT_DIM-1:0] trainX [TRAIN_ROWS-1:0][DIM-1:0];    
-    reg [DIGIT_DIM-1:0] testX [TEST_ROWS-1:0][DIM-1:0];
+    reg [(DIM*DIGIT_DIM)-1:0] weights [ROWS-1:0][COLS-1:0];
+    reg [(DIM*DIGIT_DIM)-1:0] trainX [TRAIN_ROWS-1:0];    
+    reg [(DIM*DIGIT_DIM)-1:0] testX [TEST_ROWS-1:0];
     reg [LOG2_NUM_CLASSES-1:0] trainY [TRAIN_ROWS-1:0];
     reg [LOG2_NUM_CLASSES-1:0] testY [TEST_ROWS-1:0];
     
@@ -90,73 +91,28 @@ module tsom
     reg signed [LOG2_TRAIN_ROWS:0] t1 = 0;
     reg signed [LOG2_TEST_ROWS:0] t2 = 0;
     
-    integer weights_file;
-    integer trains_file;
-    integer test_file;
-    
     reg [(DIM*DIGIT_DIM)-1:0] rand_v;
     reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_train_v;
     reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_test_v;
     
-    integer eof_weight;
-    integer eof_train;
-    integer eof_test;
-    
-    ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     initial begin
-        weights_file = $fopen("/home/mad/Documents/fpga-isom/tsom/weights.data","r");
-        while (!$feof(weights_file))
-        begin
-            eof_weight = $fscanf(weights_file, "%b\n",rand_v);
-            
-            for(kw=DIM-1;kw>=0;kw=kw-1)
-            begin
-                weights[i][j][kw] = rand_v[(DIGIT_DIM*kw)+1-:DIGIT_DIM];
-            end
-            
-            j = j + 1;
-            if (j == COLS)
-            begin
-                j = 0;
-                i = i + 1;
-            end
-        end
-        $fclose(weights_file);
+        $readmemh("tsom_weights_hex.mem", weights);
     end
     
-    ///////////////////////////////////////////////////////*******************Read train vectors***********/////////////////////////////////////
     initial begin
-        trains_file = $fopen("/home/mad/Documents/fpga-isom/tsom/train.data","r");
-        while (!$feof(trains_file))
-            begin        
-            eof_train = $fscanf(trains_file, "%b\n",temp_train_v);
-            
-            for(k1=DIM-1;k1>=0;k1=k1-1)
-            begin
-                trainX[t1][k1] = temp_train_v[(DIGIT_DIM*k1)+1+LOG2_NUM_CLASSES -:DIGIT_DIM];
-            end
-            trainY[t1] = temp_train_v[LOG2_NUM_CLASSES-1:0];
-            t1 = t1 + 1;
-        end
-        $fclose(trains_file);
-        training_en = 1;
+        $readmemb("tsom_train_x.mem", trainX);
     end
-
-    ///////////////////////////////////////////////////////*******************Read test vectors***********/////////////////////////////////////
+    
     initial begin
-        test_file = $fopen("/home/mad/Documents/fpga-isom/tsom/test.data","r");
-        while (!$feof(test_file))
-        begin
-            eof_test = $fscanf(test_file, "%b\n",temp_test_v);
-            for(k2=DIM-1;k2>=0;k2=k2-1)
-            begin
-                testX[t2][k2] = temp_test_v[(DIGIT_DIM*k2)+LOG2_NUM_CLASSES+1 -:DIGIT_DIM];
-            end
-                
-            testY[t2] = temp_test_v[LOG2_NUM_CLASSES-1:0];
-            t2 = t2 + 1;
-        end
-        $fclose(test_file);  
+        $readmemb("tsom_train_y.mem", trainY);
+    end
+    
+    initial begin
+        $readmemb("tsom_test_x.mem", testX);
+    end
+    
+    initial begin
+        $readmemb("tsom_test_y.mem", testY);
     end
     
     ////////////////////*****************************Initialize frequenct list*************//////////////////////////////
@@ -172,7 +128,7 @@ module tsom
                 end
             end
         end
-        $display("class frequnecy list initialized");
+        training_en = 1;
     end
     
     ///////////////////////////////////////////////////////****************Start LFSR**************/////////////////////////////////////
@@ -202,7 +158,6 @@ module tsom
     begin
         if (training_en)
         begin
-            $display("training_en");
             iteration = -1;
             next_iteration_en = 1;
             training_en = 0;
@@ -239,7 +194,6 @@ module tsom
             end            
             else
             begin
-                $display("next_iteration_en ", iteration); 
                 next_iteration_en = 1;  
             end
                                
@@ -247,12 +201,11 @@ module tsom
         end
     end
     
-    /////////////////////////////////////******************************Classification logic******************************/////////////////////////////////
+//    /////////////////////////////////////******************************Classification logic******************************/////////////////////////////////
     always @(posedge clk)
     begin
         if (init_classification_en)
         begin
-            $display("init_classification_en"); 
             lfsr_en = 0; // turn off the random number generator
             next_x_en = 1;
             classification_en = 1;
@@ -266,17 +219,16 @@ module tsom
         begin       
             // classify prev x 's bmu
             if (t1>=0)
+            begin
                 class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] =  class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] + 1;
-                      
+            end          
             if (t1<TRAIN_ROWS-1)
             begin                           
                 t1 = t1 + 1;
                 dist_enable = 1;
-                $display("classify ", t1);    
             end            
             else
             begin    
-                $display("classification_en STOPPED"); 
                 classification_en = 0;          
                 class_label_en = 1;                
             end 
@@ -285,7 +237,7 @@ module tsom
         end
     end
     
-    //////////////////******************************Find BMU******************************/////////////////////////////////
+//    //////////////////******************************Find BMU******************************/////////////////////////////////
     reg [LOG2_DIM-1:0] iii = 0; 
     
     reg [LOG2_DIM:0] hamming_distance;
@@ -302,42 +254,99 @@ module tsom
     reg [LOG2_COLS:0] idx_j;   
     
     reg [DIGIT_DIM-1:0] w;      
-    reg [DIGIT_DIM-1:0] x;      
+    reg [DIGIT_DIM-1:0] x;  
+    
+    wire [ROWS*COLS-1:0] is_done_counts;
+    
+    reg hd_en = 0;
+    reg hd_reset = 0;
+    
+    genvar hd_i, hd_j;
+    generate
+        for (hd_i = 0; hd_i < ROWS; hd_i = hd_i + 1)  begin
+            for (hd_j = 0; hd_j < COLS; hd_j = hd_j + 1)  begin
+                tsom_hamming_dist hamming_dist(
+                    .clk(clk),
+                    .en(hd_en),
+                    .reset(hd_reset),
+                    .w(weights[hd_i][hd_j]),
+                    .x(trainX[t1]),
+                    .distance(distances[hd_i][hd_j]),
+                    .hash(hash_counts[hd_i][hd_j]),
+                    .is_done(is_done_counts[(hd_i * COLS) + hd_j])
+                );
+            end
+        end
+    endgenerate
+    
+    always @(posedge clk) begin
+        if (dist_enable) begin
+            hd_reset = 0;
+            hd_en=1;
+            if (is_done_counts == {(ROWS*COLS){1'b1}} ) begin
+                $display("it ", iteration, " t1 ", t1);
+                hd_en = 0;
+                hd_reset = 1;
+                bmu_search_enable=1;
+                dist_enable=0;
+            end
+        end
+    end
+    
+//    always @(posedge clk)
+//    begin
+//        if (dist_enable)
+//        begin
+//            // $display("it ", iteration, " t1 ", t1);
+//            i = 0;
+//            j = 0;
+//            k = 0;
+//            min_distance_next_index = 0; // reset index
+//            min_distance = DIM; 
+//            for (i=0;i<ROWS;i=i+1)
+//            begin
+//                for (j=0;j<COLS;j=j+1)
+//                begin
+//                    hamming_distance = 0;
+//                    hash_count = 0;
+//                    for (k=0;k<DIM;k=k+1)
+//                    begin
+//                        w = weights[i][j][(k*DIGIT_DIM)+1-:2];
+//                        x = trainX[t1][(k*DIGIT_DIM)+1-:2];
+                        
+//                        if (w==0 && x==1)
+//                            hamming_distance=hamming_distance+1;
+//                        else if (w==1 && x==0)
+//                            hamming_distance=hamming_distance+1;
+                            
+//                        // get zero count
+//                        if (w==2)
+//                            hash_count=hash_count+1;  
+                            
+//                    end // k
+                    
+//                    distances[i][j] = hamming_distance;
+//                    hash_counts[i][j] = hash_count;
+//                end
+//            end
+//            dist_enable = 0;
+//            bmu_search_enable = 1;
+//        end
+//    end
     
     always @(posedge clk)
     begin
-        if (dist_enable)
-        begin
+        if (bmu_search_enable)
+        begin  
             i = 0;
             j = 0;
-            k = 0;
-            min_distance_next_index = 0; // reset index
-            min_distance = DIM;
+            k = 0;  
             for (i=0;i<ROWS;i=i+1)
             begin
                 for (j=0;j<COLS;j=j+1)
-                begin
-                    hamming_distance = 0;
-                    hash_count = 0;
-                    for (k=0;k<DIM;k=k+1)
-                    begin
-                        w = weights[i][j][k];
-                        x = trainX[t1][k];
-                        
-                        if (w==0 && x==1)
-                            hamming_distance=hamming_distance+1;
-                        else if (w==1 && x==0)
-                            hamming_distance=hamming_distance+1;
-                            
-                        // get zero count
-                        if (w==2)
-                            hash_count=hash_count+1;  
-                            
-                    end // k
-                    
-                    distances[i][j] = hamming_distance;
-                    hash_counts[i][j] = hash_count;
-                    
+                begin    
+                    hamming_distance = distances[i][j];
+                    hash_count =  hash_counts[i][j];    
                     // get minimum distance index list
                     if (min_distance == hamming_distance) begin
                         minimum_distance_indices[min_distance_next_index][1] = i;
@@ -362,7 +371,6 @@ module tsom
                     if (iii<min_distance_next_index) begin                    
                         idx_i = minimum_distance_indices[iii][1];
                         idx_j = minimum_distance_indices[iii][0];
-                        // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
                         if (hash_counts[idx_i][idx_j] < min_hash_count) begin
                             min_hash_count = hash_counts[idx_i][idx_j];
                             bmu[1] = idx_i;
@@ -377,9 +385,9 @@ module tsom
                 bmu[1] = minimum_distance_indices[0][1];
                 bmu[0] = minimum_distance_indices[0][0];
             end
-            
-            dist_enable = 0;
-            
+            bmu_search_enable = 0;
+            // $display("bmu ", bmu[1], bmu[0], "   distance ", min_distance, " 4,6 ", distances[4][6]);
+            //dist_enable = 0;
             if (!classification_en)
                 init_neigh_search_en = 1; // find neighbours
             else
@@ -436,24 +444,26 @@ module tsom
 
     always @(posedge clk)
     begin    
-        if (nb_search_en) begin  
+        if (nb_search_en) begin
+            
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
             
             if (man_dist <= nb_radius) begin
+                // $display("nb ", bmu_i, bmu_j);
                 // update neighbourhood
                 for (digit=0; digit<DIM; digit=digit+1) begin
                    if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] < update_prob) begin                        
                         seed_en = 0;
-                        w = weights[bmu_i][bmu_j][digit];
-                        x = trainX[t1][digit];
+                        w = weights[bmu_i][bmu_j][(digit*DIGIT_DIM)+1-:2];
+                        x = trainX[t1][(digit*DIGIT_DIM)+1-:2];
                         
                         if (w==1 && x==0)
-                            weights[bmu_i][bmu_j][digit]=2;
+                            weights[bmu_i][bmu_j][(digit*DIGIT_DIM)+1-:2] = 2'b10;
                         else if (w==0 && x==1)
-                            weights[bmu_i][bmu_j][digit]=2;                            
+                            weights[bmu_i][bmu_j][(digit*DIGIT_DIM)+1-:2] = 2'b10;                            
                         else if (w==2)
-                            weights[bmu_i][bmu_j][digit]=x;
+                            weights[bmu_i][bmu_j][(digit*DIGIT_DIM)+1-:2] = x;
                     end
                 end                
             end
@@ -481,7 +491,6 @@ module tsom
     begin
         if (class_label_en)
         begin
-            $display("class_label_en");   
             i=0;j=0;k=0;
             for(i=0;i<ROWS;i=i+1)
             begin
@@ -497,7 +506,7 @@ module tsom
                             most_freq = class_frequency_list[i][j][k];
                         end
                     end
-                    if (class_labels[i][j] == NUM_CLASSES) /////////// hardcoded default value
+                    if (class_labels[i][j] == NUM_CLASSES-1) /////////// hardcoded default value
                     begin                        
                         // reset array
                         for(k=0;k<=NUM_CLASSES-1;k=k+1)
@@ -571,6 +580,9 @@ module tsom
     
     reg [LOG2_TEST_ROWS:0] tot_predictions = 0;
     
+    reg [LOG2_DIM:0] c_distances [ROWS-1:0][COLS-1:0];
+    reg [LOG2_DIM:0] c_hash_counts [ROWS-1:0][COLS-1:0]; 
+    
     always @(posedge clk)
     begin
         if (classify_x_en)
@@ -588,8 +600,8 @@ module tsom
                     hash_count = 0;
                     for (k=0;k<DIM;k=k+1)
                     begin
-                        w = weights[i][j][k];
-                        x = testX[t2][k];
+                        w = weights[i][j][(k*DIGIT_DIM)+1-:2];
+                        x = testX[t2][(k*DIGIT_DIM)+1-:2];
                         
                         if (w==0 && x==1)
                             hamming_distance=hamming_distance+1;
@@ -602,8 +614,8 @@ module tsom
                             
                     end // k
                     
-                    distances[i][j] = hamming_distance;
-                    hash_counts[i][j] = hash_count;
+                    c_distances[i][j] = hamming_distance;
+                    c_hash_counts[i][j] = hash_count;
                     
                     // get minimum distance index list
                     if (min_distance == hamming_distance) begin
@@ -629,7 +641,6 @@ module tsom
                     if (iii<min_distance_next_index) begin                    
                         idx_i = minimum_distance_indices[iii][1];
                         idx_j = minimum_distance_indices[iii][0];
-                        // $display("more than one bmu ", min_distance_next_index, " iii ", iii);
                         if (hash_counts[idx_i][idx_j] < min_hash_count) begin
                             min_hash_count = hash_counts[idx_i][idx_j];
                             bmu[1] = idx_i;
@@ -650,7 +661,6 @@ module tsom
                 correct_predictions = correct_predictions + 1;                
             end
             
-            $display("pred ", class_labels[bmu[1]][bmu[0]], " actual ", testY[t2]);   
              
             predictionY[t2] = class_labels[bmu[1]][bmu[0]];     
             classify_x_en = 0;
@@ -658,24 +668,24 @@ module tsom
         end        
     end
     
-    integer fd;    
-    always @(posedge clk) begin
-        if (write_en) begin
-            fd = $fopen("/home/mad/Documents/fpga-isom/tsom/weight_out.data", "w");
-            i=0; j=0; k=0;
-            for (i=0; i<=ROWS-1; i=i+1) begin
-                for (j=0; j<=COLS-1; j=j+1) begin
-                    for (k=DIM-1; k>=0; k=k-1) begin                        
-                        $fwriteb(fd, weights[i][j][k]);
-                    end
-                    $fwrite(fd, "\n");
-                end
-            end
+//    integer fd;    
+//    always @(posedge clk) begin
+//        if (write_en) begin
+//            fd = $fopen("/home/aari/Projects/Vivado/fpga_som/tsom/node_labels_out.data", "w");
+//            i=0; j=0; k=0;
+//            for (i=0; i<=ROWS-1; i=i+1) begin
+//                for (j=0; j<=COLS-1; j=j+1) begin
+//                    for (k=DIM-1; k>=0; k=k-1) begin                        
+//                        $fwriteb(fd, class_labels[i][j][k]);
+//                    end
+//                    $fwrite(fd, "\n");
+//                end
+//            end
             
-            #10 $fclose(fd);            
-            is_completed = 1;   
-        end
-    end
+//            #10 $fclose(fd);            
+//            is_completed = 1;   
+//        end
+//    end
         
     assign prediction = correct_predictions;
     assign completed = is_completed;
