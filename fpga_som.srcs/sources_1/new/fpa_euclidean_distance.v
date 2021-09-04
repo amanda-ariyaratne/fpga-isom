@@ -15,21 +15,24 @@ module fpa_euclidean_distance
     output wire is_done
 );
 
+////////////////////module enables and disbles///////////////////////
 reg done=0;
-reg init=1;
-                   
+reg init=1;                   
 reg add_all_init=0;
+reg wait_en = 0;
 
+//////////////////////////////PART 1////////////////////////////
+////////////////////distnace squer module///////////////////////
 reg dist_sqr_en=0;
 reg dist_sqr_reset=0;
 wire [DIGIT_DIM*DIM-1:0] dist_sqr_in_1;
 wire [DIGIT_DIM*DIM-1:0] dist_sqr_in_2;
 wire [DIGIT_DIM*DIM-1:0] dist_sqr_out;
-
 wire [DIGIT_DIM*DIM-1:0] dist_sqr_done;
-
 wire [DIM-1:0] dist_sqr_is_done;
 
+
+////////////////////Get all done to one variable///////////////////////
 genvar k;
 generate
     for (k=1; k<=DIM; k=k+1) begin
@@ -40,6 +43,7 @@ endgenerate
 assign dist_sqr_in_1 = weight;
 assign dist_sqr_in_2 = trainX;
 
+////////////////////parallel blocks for distance square///////////////////////
 genvar i;
 generate
     for (i=DIGIT_DIM; i<=DIM*DIGIT_DIM; i=i+DIGIT_DIM) begin
@@ -55,6 +59,8 @@ generate
     end
 endgenerate
 
+
+////////////////////Calculate distance in parallel///////////////////////
 always @(posedge clk) begin 
     if (en && init) begin
         dist_sqr_en=1;
@@ -71,12 +77,17 @@ always @(posedge clk) begin
     end
 end
 
+//////////////////////////////PART 2////////////////////////////
+////////////////////Add all distance part///////////////////////
 reg add_all_en=0;
 reg add_all_reset=0;
 reg [DIGIT_DIM-1:0] add_all_in_1=0;
 reg [DIGIT_DIM-1:0] add_all_in_2;
 wire [DIGIT_DIM-1:0] add_all_out;
-wire add_all_done=0;
+wire add_all_done;
+
+assign num_out = add_all_out;
+assign is_done = done;
 
 fpa_adder add_all(
     .clk(clk),
@@ -88,36 +99,47 @@ fpa_adder add_all(
     .is_done(add_all_done)
 );
 
+//////////////////////////calculate distance sum in parallel/////////////////////////
 integer signed j=DIGIT_DIM;
 always @(posedge clk) begin 
-    if (add_all_init) begin
-        
+    if (add_all_init && !wait_en) begin
         add_all_in_2 = dist_sqr_out[j-1 -:DIGIT_DIM];
         add_all_en = 1;
         add_all_reset = 0;
-        $display("DRAMA", add_all_done);
-        if (add_all_done) begin
-            $display("begin done");
-            add_all_en = 0;
-            add_all_in_1 = add_all_out;
-            j = j + DIGIT_DIM;
-            add_all_reset = 1;
-            dist_sqr_reset = 1;
-        end
+        wait_en = 1;
+    end
+end
+
+always @(posedge clk) begin 
+    if (add_all_init && add_all_done) begin
+        add_all_en = 0;
+        add_all_in_1 = add_all_out;
+        j = j + DIGIT_DIM;
+        add_all_reset = 1;
         
         if (j > DIGIT_DIM*DIM) begin
             add_all_init = 0;
             done = 1;
-        end
+        end else 
+            wait_en = 0;
     end
 end
-    
+
+//////////////////////////////reset block////////////////////////////
 always @(posedge reset) begin
     done=0;
     init=1;
+    wait_en = 0;
+    add_all_init=0;
+    
+    dist_sqr_en=0;
+    dist_sqr_reset=0;
+    
+    add_all_en=0;
+    add_all_reset=0;
+    add_all_in_1=0;
+    
+    j=DIGIT_DIM;    
 end
-
-assign num_out = add_all_out;
-assign is_done = done;
 
 endmodule

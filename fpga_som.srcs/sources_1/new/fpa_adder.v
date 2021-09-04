@@ -30,21 +30,22 @@ reg init = 1;
 reg [24:0] man_sum;
 reg [5:0] shift_count=0;
 
-reg done=0;
+reg done = 0;
 
-assign is_done=done;
+assign is_done = done;
 assign num_out = summation;
 
 always @(posedge reset) begin
-    done=0;
+    done = 0;
     init = 1;
-    normalize=0;  
-    shift_count=0;  
+    normalize = 0;  
+    shift_count = 0;  
 end
 
 always @(posedge clk) begin
     if (en && init) begin 
         // compare exponents
+        summation=0;
         if (num1[30:23] > num2[30:23])
             bigger = 1;
         else if (num2[30:23] > num1[30:23])
@@ -73,67 +74,63 @@ always @(posedge clk) begin
         
         // diff in exponents
         exp_diff = e1 - e2;
-        if (exp_diff > 8) begin // too small 2nd number
-            summation = num1;
-            init = 0;
-            done=1;
+        m2 = m2 >> exp_diff;
+        e2 = e1;
+        
+        sign1 = n1[31];
+        sign2 = n2[31];
+        
+        // signs of the inputs are the same
+        if (sign1 == sign2) begin
+            $display("dis - 1");
+            man_sum = {1'b0, m1} + {1'b0, m2};  
+            overflow = 0;  
+            if (man_sum[24] == 1) begin
+                man_sum = man_sum >> 1;
+                overflow = 1;
+            end
+                
+            summation[31] = sign1;           
+            summation[22: 0] =  man_sum[22: 0];
+            summation[30: 23] = e1 + overflow;
+            done = 1;
             
         end else begin
-            // shift smaller one by exp difference
-            m2 = m2 >> exp_diff;
-            e2 = e1;
-            
-            sign1 = n1[31];
-            sign2 = n2[31];
-                
-            
-            // signs of the inputs are the same
-            if (sign1 == sign2) begin
-                man_sum = {1'b0, m1} + {1'b0, m2};  
-                overflow = 0;  
-                if (man_sum[24] == 1) begin
-                    man_sum = man_sum >> 1;
-                    overflow = 1;
-                end
-                    
-                summation[31] = sign1;           
-                summation[22: 0] =  man_sum[22: 0];
-                summation[30: 23] = e1 + overflow;
-                
-            end else if (sign1 != sign2) begin
-                man_sum = m1 - m2; 
-                summation[31] = sign1; 
-            end
-            init = 0;
-            normalize = 1;
-        
+            $display("dis - 2");
+            man_sum = m1 - m2; 
+            summation[31] = sign1; 
         end
+        init = 0;
+        normalize = 1;
     end
 end
 
 always @(posedge clk) begin
-    if (normalize) begin
-        
+    
+    if (normalize) begin        
         if (sign1 == sign2) begin
-            done=1;
+            $display("dis - 3");
             normalize = 0; 
             
         end else if (man_sum == 0 && exp_diff == 0) begin //0
+            $display("dis - 4");
             summation = 0;
             done=1;
             normalize = 0;
             
         end else if (man_sum[23] == 0) begin
+            $display("dis - 5 ", shift_count);
             shift_count = shift_count + 1;
             man_sum = man_sum << 1;
             
         end else begin
+            $display("dis - 6");
             summation[22: 0] =  man_sum[22: 0];
             summation[30: 23] = e1 - shift_count;
             done=1;
             normalize = 0;
-
-        end        
+            
+        end
     end
 end
 

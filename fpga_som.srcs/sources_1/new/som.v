@@ -365,7 +365,7 @@ module som
     reg [DIGIT_DIM*DIM-1:0] distance_in_1;
     reg [DIGIT_DIM*DIM-1:0] distance_in_2;
     wire [DIGIT_DIM-1:0] distance_out;
-    wire distance_done=0;
+    wire distance_done;
     reg distance_en=0;
     reg distance_reset;
     
@@ -374,10 +374,11 @@ module som
     reg [DIGIT_DIM-1:0] comp_in_1;
     reg [DIGIT_DIM-1:0] comp_in_2;
     wire [1:0] comp_out;
-    wire comp_done=0;
+    wire comp_done;
     reg comp_en=0;
-    reg comp_reset=1;
+    reg comp_reset=0;
     
+    // generate loop and create instances
     fpa_euclidean_distance euclidean_distance(
         .clk(clk),
         .en(distance_en),
@@ -387,6 +388,7 @@ module som
         .num_out(distance_out),
         .is_done(distance_done)
     );   
+    // end
     
     fpa_comparator get_max(
         .clk(clk),
@@ -398,8 +400,7 @@ module som
         .is_done(comp_done)
     );
     
-    always @(posedge clk)
-    begin
+    always @(posedge clk) begin
         if (dist_enable) begin
             i = 0;
             j = 0;
@@ -410,12 +411,14 @@ module som
         end
     end
     
+    // use this to create generate loop
     always @(posedge clk) begin
         if (iterate_en) begin
             for(assign_i=DIM-1; assign_i>0; assign_i=assign_i-1) begin
                 for(assign_j=DIGIT_DIM-1; assign_j>0; assign_j=assign_j-1) begin
                     distance_in_1[(assign_i*DIM)+assign_j] = weights[i][j][assign_i][assign_j];
                     distance_in_2[(assign_i*DIM)+assign_j] = trainX[t1][assign_i][assign_j];
+                    // done for each module
                 end                
             end
             
@@ -424,11 +427,18 @@ module som
         end
     end
     
+    // if distance done initialize comparater
+    
+    // check euclidean distance
+    
+    // if all done are finished do this module - not one done
     always @(posedge clk) begin
         if (distance_done) begin
             distance_en=0;
             $display("Calculated");
             comp_in_1 = min_distance;
+            
+            // get i th element of distance out
             comp_in_2 = distance_out;
             comp_en = 1;
             
@@ -510,7 +520,7 @@ module som
     reg [DIGIT_DIM-1:0] update_in_1;
     reg [DIGIT_DIM-1:0] update_in_2;
     wire [DIGIT_DIM-1:0] update_out;
-    wire update_done=0;
+    wire update_done;
     
     fpa_update_weight update(
         .clk(clk),
