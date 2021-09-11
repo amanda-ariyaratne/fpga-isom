@@ -82,7 +82,6 @@ always @(posedge clk) begin
         
         // signs of the inputs are the same
         if (sign1 == sign2) begin
-            $display("dis - 1");
             man_sum = {1'b0, m1} + {1'b0, m2};  
             overflow = 0;  
             if (man_sum[24] == 1) begin
@@ -96,7 +95,6 @@ always @(posedge clk) begin
             done = 1;
             
         end else begin
-            $display("dis - 2");
             man_sum = m1 - m2; 
             summation[31] = sign1; 
         end
@@ -109,22 +107,18 @@ always @(posedge clk) begin
     
     if (normalize) begin        
         if (sign1 == sign2) begin
-            $display("dis - 3");
             normalize = 0; 
             
         end else if (man_sum == 0 && exp_diff == 0) begin //0
-            $display("dis - 4");
             summation = 0;
             done=1;
             normalize = 0;
             
         end else if (man_sum[23] == 0) begin
-            $display("dis - 5 ", shift_count);
             shift_count = shift_count + 1;
             man_sum = man_sum << 1;
             
         end else begin
-            $display("dis - 6");
             summation[22: 0] =  man_sum[22: 0];
             summation[30: 23] = e1 - shift_count;
             done=1;

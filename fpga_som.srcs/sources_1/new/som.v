@@ -19,25 +19,24 @@ module som
         parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 2, 
         
-        parameter TOTAL_ITERATIONS=4,              
-        parameter LOG2_TOT_ITERATIONS = 3,
+        parameter TOTAL_ITERATIONS=12,              
+        parameter LOG2_TOT_ITERATIONS = 4,
+        parameter ITERATION_STEP = 3, 
         
         parameter INITIAL_NB_RADIUS = 3,
-        parameter NB_RADIUS_STEP = 1,
+        parameter NB_RADIUS_STEP = 3,
         parameter LOG2_NB_RADIUS = 2,
-        parameter ITERATION_NB_STEP = 1,
+        parameter ITERATION_NB_STEP = 3,
+        parameter N_STEP = 4,
         
         parameter INITIAL_ALPHA = 32'b00111111011001100110011001100110, //0.9
-        parameter ALPHA_STEP = 32'b00111101110011001100110011001101,//0.1
+        parameter ALPHA_STEP = 32'b00111110010011001100110011001101,//0.1
+        parameter A_STEP = 4,
+        parameter LOG2_ALPHA = 32,
         // 0.9 = 32'b00111111011001100110011001100110
         // 0.1 - 32'b00111101110011001100110011001101
         // 0.2 - 32'b00111110010011001100110011001101
-        // 0.05 - 32'b00111101010011001100110011001101
-        
-        parameter LOG2_ALPHA = 32,
-        parameter ITERATION_STEP = 1,          
-        parameter STEP = 4,
-        
+        // 0.05 - 32'b00111101010011001100110011001101        
         parameter RAND_NUM_BIT_LEN = 10        
     )
     (
@@ -61,7 +60,7 @@ module som
     reg [1:0] class_label_en=0;
     reg write_en = 0;
     reg is_completed = 0;
-    reg iterate_en=0;
+    reg min_distance_en=0;
     reg bmu_en=0;
     reg classify_init_en=0;
     reg test_mode=0;
@@ -86,9 +85,9 @@ module som
     ///////////////////////////////////////////////////////*******************File read variables***********/////////////////////////////////////
     
     
-    reg [DIGIT_DIM-1:0] weights [ROWS-1:0][COLS-1:0][DIM-1:0];
-    reg [DIGIT_DIM-1:0] trainX [TRAIN_ROWS-1:0][DIM-1:0];    
-    reg [DIGIT_DIM-1:0] testX [TEST_ROWS-1:0][DIM-1:0];
+    reg [DIGIT_DIM*DIM-1:0] weights [ROWS-1:0][COLS-1:0];
+    reg [DIGIT_DIM*DIM-1:0] trainX [TRAIN_ROWS-1:0];    
+    reg [DIGIT_DIM*DIM-1:0] testX [TEST_ROWS-1:0];
     reg [LOG2_NUM_CLASSES-1:0] trainY [TRAIN_ROWS-1:0];
     reg [LOG2_NUM_CLASSES-1:0] testY [TEST_ROWS-1:0];
     
@@ -102,77 +101,29 @@ module som
     reg signed [LOG2_TRAIN_ROWS:0] t1 = 0;
     reg signed [LOG2_TEST_ROWS:0] t2 = 0;
     
-    integer weights_file;
-    integer trains_file;
-    integer test_file;
-    
-    reg [(DIM*DIGIT_DIM)-1:0] rand_v;
-    reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_train_v;
-    reg [(DIM*DIGIT_DIM)+LOG2_NUM_CLASSES-1:0] temp_test_v;
-    
-    integer eof_weight;
-    integer eof_train;
-    integer eof_test;
-    
-    ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     initial begin
-        weights_file = $fopen("/home/aari/Projects/Vivado/fpga_som/som/weights.data","r");
-        while (!$feof(weights_file))
-        begin
-            eof_weight = $fscanf(weights_file, "%b\n",rand_v);
-            
-            for(kw=DIM;kw>0;kw=kw-1) begin
-                weights[i][j][kw-1] = rand_v[(DIGIT_DIM*kw)+1-:DIGIT_DIM];
-            end
-            
-            j = j + 1;
-            if (j == COLS)
-            begin
-                j = 0;
-                i = i + 1;
-            end
-        end
-        $fclose(weights_file);
+        $readmemb("som_weights.mem", weights);
     end
     
-    ///////////////////////////////////////////////////////*******************Read train vectors***********/////////////////////////////////////
     initial begin
-        trains_file = $fopen("/home/aari/Projects/Vivado/fpga_som/som/train.data","r");
-        while (!$feof(trains_file)) begin        
-            eof_train = $fscanf(trains_file, "%b\n",temp_train_v);
-            
-            for(k1=DIM;k1>0;k1=k1-1) begin
-                trainX[t1][k1-1] = temp_train_v[(DIGIT_DIM*k1)+LOG2_NUM_CLASSES-1 -:DIGIT_DIM];
-            end
-            trainY[t1] = temp_train_v[LOG2_NUM_CLASSES-1:0];
-            t1 = t1 + 1;
-        end
-        $fclose(trains_file);
-        training_en = 1;
-    end
-
-    ///////////////////////////////////////////////////////*******************Read test vectors***********/////////////////////////////////////
-    initial begin
-        test_file = $fopen("/home/aari/Projects/Vivado/fpga_som/som/test.data","r");
-        while (!$feof(test_file))
-        begin
-            eof_test = $fscanf(test_file, "%b\n",temp_test_v);
-            for(k2=DIM;k2>0;k2=k2-1)
-            begin
-                testX[t2][k2-1] = temp_test_v[(DIGIT_DIM*k1)+LOG2_NUM_CLASSES-1 -:DIGIT_DIM];
-            end
-                
-            testY[t2] = temp_test_v[LOG2_NUM_CLASSES-1:0];
-            t2 = t2 + 1;
-        end
-        $fclose(test_file);  
+        $readmemb("som_train_x.mem", trainX);
     end
     
-    ////////////////////*****************************Initialize frequenct list*************//////////////////////////////
-    initial
-    begin
-        for (ii = 0; ii < ROWS; ii = ii + 1)
-        begin
+    initial begin
+        $readmemb("som_train_y.mem", trainY);
+    end
+    
+    initial begin
+        $readmemb("som_test_x.mem", testX);
+    end
+    
+    initial begin
+        $readmemb("som_test_y.mem", testY);
+    end
+    
+        ////////////////////*****************************Initialize frequenct list*************//////////////////////////////
+    initial begin
+        for (ii = 0; ii < ROWS; ii = ii + 1) begin
             for (jj = 0; jj < COLS; jj = jj + 1)
             begin
                 for (kk = 0; kk < NUM_CLASSES; kk = kk + 1)
@@ -181,36 +132,15 @@ module som
                 end
             end
         end
+//        training_en = 1;
+        write_en=1;
         $display("class frequnecy list initialized");
     end
-    
-    ///////////////////////////////////////////////////////****************Start LFSR**************/////////////////////////////////////
-    
-    reg lfsr_en = 1;
-    reg seed_en = 1;
-    wire [(DIM*RAND_NUM_BIT_LEN)-1:0] random_number_arr;
-    
-    genvar dim_i;
-    
-    generate
-        for(dim_i=1; dim_i <= DIM; dim_i=dim_i+1)
-        begin
-            lfsr #(.NUM_BITS(RAND_NUM_BIT_LEN)) lfsr_rand
-            (
-                .i_Clk(clk),
-                .i_Enable(lfsr_en),
-                .i_Seed_DV(seed_en),
-                .i_Seed_Data(dim_i[RAND_NUM_BIT_LEN-1:0]),
-                .o_LFSR_Data(random_number_arr[(dim_i*RAND_NUM_BIT_LEN)-1 : (dim_i-1)*RAND_NUM_BIT_LEN])
-            );
-        end
-    endgenerate
     
     ///////////////////////////////////////////////////////*******************Start Training***********/////////////////////////////////////
     always @(posedge clk)
     begin
-        if (training_en)
-        begin
+        if (training_en) begin
             $display("training_en");
             iteration = -1;
             next_iteration_en = 1;
@@ -230,24 +160,23 @@ module som
                 $display("iteration ", iteration);
                 
                 // change update alpha
-                for (step_i=1; step_i<=STEP;step_i = step_i+1) begin
+                for (step_i=1; step_i<=A_STEP;step_i = step_i+1) begin
                     if ((iteration==(ITERATION_STEP*step_i))) begin
                         update_alpha_en=1;
                     end
                 end
                 // change neighbouhood radius
-                for (step_i=1; step_i<=4;step_i = step_i+1) begin
+                for (step_i=1; step_i<=N_STEP;step_i = step_i+1) begin
                     if ( (iteration==(ITERATION_NB_STEP*step_i) ) ) begin
                         nb_radius <=  nb_radius-NB_RADIUS_STEP;
                     end
-                end
-                
-                next_x_en = 1;                
-            end
-            else begin
+                end                
+                next_x_en = 1; 
+                               
+            end else begin
                 iteration = -1;                
-                next_x_en = 0;
-                init_classification_en = 1; // start classification
+                next_x_en = 0;                
+                init_classification_en = 1; // start classification                
             end
             
             next_iteration_en = 0;            
@@ -275,9 +204,12 @@ module som
         if (update_alpha_en) begin
             alpha_in_1=alpha;
             alpha_in_2=ALPHA_STEP;
+            alpha_in_2[DIGIT_DIM-1] = ~alpha_in_2[DIGIT_DIM-1];
             alpha_en=1;
+            alpha_reset=0;
             
             if (alpha_done) begin
+                $display("ALPHA updated");
                 alpha = alpha_out;
                 alpha_en=0;
                 alpha_reset=1;
@@ -288,18 +220,14 @@ module som
     
     always @(posedge clk)
     begin
-        if (next_x_en && !classification_en)
-        begin                
-            if (t1<TRAIN_ROWS-1)
-            begin        
+        if (next_x_en && !classification_en) begin                
+            if (t1<TRAIN_ROWS-1) begin        
                 t1 = t1 + 1;
-                $display("t1 ", t1);
+                $display("t1 ", t1,"-", iteration);
                 dist_enable = 1;
-            end            
-            else
-            begin
+            end else begin
                 $display("next_iteration_en ", iteration); 
-                next_iteration_en = 1;  
+                next_iteration_en = 1;                              
             end
                                
             next_x_en = 0;
@@ -312,7 +240,6 @@ module som
         if (init_classification_en)
         begin
             $display("init_classification_en"); 
-            lfsr_en = 0; // turn off the random number generator
             next_x_en = 1;
             classification_en = 1;
             init_classification_en = 0;
@@ -327,20 +254,17 @@ module som
             if (t1>=0)
                 class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] =  class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] + 1;
                       
-            if (t1<TRAIN_ROWS-1)
-            begin                           
+            if (t1<TRAIN_ROWS-1) begin                           
                 t1 = t1 + 1;
-                dist_enable = 1;
+                dist_enable = 1;                
                 $display("classify ", t1);    
-            end            
-            else
-            begin    
+            end else begin    
                 $display("classification_en STOPPED"); 
-                classification_en = 0;          
+                classification_en = 0; 
                 class_label_en = 1;                
             end 
-                         
-            next_x_en = 0;
+            next_x_en = 0;           
+            
         end
     end
     
@@ -362,33 +286,35 @@ module som
     reg [DIGIT_DIM-1:0] w;      
     reg [DIGIT_DIM-1:0] x;  
     
-    reg [DIGIT_DIM*DIM-1:0] distance_in_1;
-    reg [DIGIT_DIM*DIM-1:0] distance_in_2;
-    wire [DIGIT_DIM-1:0] distance_out;
-    wire distance_done;
+    wire [DIGIT_DIM-1:0] distance_out [ROWS-1:0][COLS-1:0];
+    wire [ROWS*COLS-1:0] distance_done;
     reg distance_en=0;
-    reg distance_reset;
+    reg distance_reset=0;
+    reg [DIGIT_DIM*DIM-1:0] distance_X=0;
     
-    integer signed assign_i;
-    integer signed assign_j;
+    genvar euc_i, euc_j;
+    generate
+        for(euc_i=0; euc_i<=ROWS-1; euc_i=euc_i+1) begin
+            for(euc_j=0; euc_j<=COLS-1; euc_j=euc_j+1) begin
+                fpa_euclidean_distance euclidean_distance(
+                    .clk(clk),
+                    .en(distance_en),
+                    .reset(distance_reset),
+                    .weight(weights[euc_i][euc_j]),
+                    .trainX(distance_X),
+                    .num_out(distance_out[euc_i][euc_j]),
+                    .is_done(distance_done[euc_i*ROWS+euc_j])
+                );
+            end                
+        end
+    endgenerate
+    
     reg [DIGIT_DIM-1:0] comp_in_1;
     reg [DIGIT_DIM-1:0] comp_in_2;
     wire [1:0] comp_out;
     wire comp_done;
     reg comp_en=0;
     reg comp_reset=0;
-    
-    // generate loop and create instances
-    fpa_euclidean_distance euclidean_distance(
-        .clk(clk),
-        .en(distance_en),
-        .reset(distance_reset),
-        .weight(distance_in_1),
-        .trainX(distance_in_2),
-        .num_out(distance_out),
-        .is_done(distance_done)
-    );   
-    // end
     
     fpa_comparator get_max(
         .clk(clk),
@@ -402,51 +328,34 @@ module som
     
     always @(posedge clk) begin
         if (dist_enable) begin
-            i = 0;
-            j = 0;
-            min_distance_next_index = 0;
-            min_distance = p_inf;
-            dist_enable=0;
-            iterate_en=1;
-        end
-    end
-    
-    // use this to create generate loop
-    always @(posedge clk) begin
-        if (iterate_en) begin
-            for(assign_i=DIM-1; assign_i>0; assign_i=assign_i-1) begin
-                for(assign_j=DIGIT_DIM-1; assign_j>0; assign_j=assign_j-1) begin
-                    distance_in_1[(assign_i*DIM)+assign_j] = weights[i][j][assign_i][assign_j];
-                    distance_in_2[(assign_i*DIM)+assign_j] = trainX[t1][assign_i][assign_j];
-                    // done for each module
-                end                
+            distance_X=trainX[t1];
+            distance_en=1;
+            distance_reset=0;
+            
+            if (distance_done) begin
+                $display("All distance done for ", t1);
+                distance_en=0;
+                distance_reset=1;
+                i = 0;
+                j = 0;
+                min_distance_next_index = 0;
+                min_distance = p_inf;
+                dist_enable=0;
+                min_distance_en=1;
             end
-            
-            distance_en=1;            
-            iterate_en=0;
         end
     end
     
-    // if distance done initialize comparater
-    
-    // check euclidean distance
-    
-    // if all done are finished do this module - not one done
     always @(posedge clk) begin
-        if (distance_done) begin
-            distance_en=0;
-            $display("Calculated");
+        if (min_distance_en) begin
             comp_in_1 = min_distance;
-            
-            // get i th element of distance out
-            comp_in_2 = distance_out;
+            comp_in_2 = distance_out[i][j];
             comp_en = 1;
+            comp_reset = 0;
             
             if (comp_done) begin
-                comp_en=0;
-                
-                distance_reset=1;
-                comp_reset=1;
+                comp_en = 0;
+                comp_reset = 1;
                 
                 if (comp_out==0) begin
                     minimum_distance_indices[min_distance_next_index][1] = i;
@@ -454,7 +363,7 @@ module som
                     min_distance_next_index = min_distance_next_index + 1;
                 
                 end else if (comp_out==1) begin
-                    min_distance = distance_out;
+                    min_distance = distance_out[i][j];
                     minimum_distance_indices[0][1] = i;
                     minimum_distance_indices[0][0] = j;                        
                     min_distance_next_index = 1;
@@ -468,20 +377,15 @@ module som
                 end
                 
                 if (i==ROWS-1) begin
+                    min_distance_en=0;
                     bmu_en=1;
-                end else begin
-                    for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
-                        distance_in_1[assign_i] = weights[i][j][assign_i];
-                        distance_in_2[assign_i] = trainX[t1][assign_i];
-                    end
-                    distance_en=1;
                 end
             end
         end
     end
     
     always @(posedge clk) begin
-        if (bmu_en) begin
+        if (bmu_en && !test_mode) begin            
             bmu[1] = minimum_distance_indices[0][1];
             bmu[0] = minimum_distance_indices[0][0];
             
@@ -517,8 +421,8 @@ module som
     
     reg update_en=0;
     reg update_reset=0;
-    reg [DIGIT_DIM-1:0] update_in_1;
-    reg [DIGIT_DIM-1:0] update_in_2;
+    reg [DIGIT_DIM*DIM-1:0] update_in_1;
+    reg [DIGIT_DIM*DIM-1:0] update_in_2;
     wire [DIGIT_DIM-1:0] update_out;
     wire update_done;
     
@@ -532,26 +436,26 @@ module som
         .num_out(update_out),
         .is_done(update_done)
     );
+    
+    reg not_man_dist_en = 0;
 
-    always @(posedge clk)
-    begin    
+    always @(posedge clk) begin    
         if (nb_search_en && !update_en) begin  
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
             
             if (man_dist <= nb_radius) begin
-                
-                for (digit=0; digit<DIM; digit=digit+1) begin
-                   update_in_1[digit] = weights[bmu_i][bmu_j][digit];
-                   update_in_2[digit] = trainX[t1][digit];
-                end  
-                update_en=1;              
-            end
+                update_in_1 = weights[bmu_i][bmu_j];
+                update_in_2 = trainX[t1];
+                update_en=1; 
+                update_reset=0;             
+            end else
+                not_man_dist_en = 1;
         end
     end
     
     always @(posedge clk) begin
-        if (update_done) begin
+        if (update_done || not_man_dist_en) begin
             update_en=0;
             update_reset=1;
             
@@ -565,30 +469,26 @@ module som
                 nb_search_en = 0; // neighbourhood search finished        
                 next_x_en = 1; // go to the next input
             end
+            not_man_dist_en = 0;
         end
     end
     
     /////////////////////************Start Classification of weight vectors********///////////////////////
     reg [LOG2_NUM_CLASSES:0] class_labels [ROWS-1:0][COLS-1:0];    
-
+    reg [DIM-1:0] default_freq [NUM_CLASSES-1:0];
     integer most_freq = 0;
-    reg [3:0] default_freq [NUM_CLASSES-1:0];
     
-    always @(posedge clk)
-    begin
-        if (class_label_en)
-        begin
+    always @(posedge clk) begin
+        if (class_label_en) begin
+            $display("Class labelling");
             i=0;j=0;k=0;
             for(i=0;i<ROWS;i=i+1)
             begin
-                for(j=0;j<COLS;j=j+1)
-                begin
+                for(j=0;j<COLS;j=j+1) begin
                     most_freq = 0;
                     class_labels[i][j] = NUM_CLASSES-1; /////////// hardcoded default value
-                    for(k=0;k<NUM_CLASSES-1;k=k+1)
-                    begin
-                        if (class_frequency_list[i][j][k]>most_freq)
-                        begin
+                    for(k=0;k<NUM_CLASSES-1;k=k+1) begin
+                        if (class_frequency_list[i][j][k]>most_freq) begin
                             class_labels[i][j] = k;
                             most_freq = class_frequency_list[i][j][k];
                         end
@@ -596,40 +496,33 @@ module som
                     if (class_labels[i][j] == NUM_CLASSES) /////////// hardcoded default value
                     begin                        
                         // reset array
-                        for(k=0;k<=NUM_CLASSES-1;k=k+1)
-                        begin
+                        for(k=0;k<=NUM_CLASSES-1;k=k+1) begin
                             default_freq[k] = 0;
                         end
                         
-                        if (i-1>0)
-                        begin
+                        if (i-1>0) begin
                             k = class_labels[i-1][j];
                             default_freq[k] = default_freq[k] +1;
                         end
                         
-                        if (i+1<ROWS)
-                        begin
+                        if (i+1<ROWS) begin
                             k = class_labels[i+1][j];
                             default_freq[k] = default_freq[k] +1;
                         end
                         
-                        if (j-1>0)
-                        begin
+                        if (j-1>0) begin
                             k = class_labels[i][j-1];
                             default_freq[k] = default_freq[k] +1;
                         end
                         
-                        if (j+1<COLS)
-                        begin
+                        if (j+1<COLS) begin
                             k = class_labels[i][j+1];
                             default_freq[k] = default_freq[k] +1;
                         end
                         
                         most_freq = 0;
-                        for(k=0;k<=NUM_CLASSES-2;k=k+1) // only check 0,1,2
-                        begin
-                            if (default_freq[k] >= most_freq)
-                            begin
+                        for(k=0;k<=NUM_CLASSES-2;k=k+1) begin // only check 0,1,2
+                            if (default_freq[k] >= most_freq) begin
                                 most_freq = default_freq[k];
                                 class_labels[i][j] = k;
                             end
@@ -639,7 +532,7 @@ module som
             end
             class_label_en = 0;
             test_en = 1;
-            test_mode=1;
+            test_mode = 1;
             t2 = -1;
         end
     end
@@ -648,19 +541,16 @@ module som
     
     always @(posedge clk)
     begin
-        if (test_en)
-        begin
-            if (t2<TEST_ROWS-1)
-            begin
+        if (test_en) begin
+            if (t2<TEST_ROWS-1) begin
                 t2 = t2 + 1;                
                 classify_x_en = 1;
-            end            
-            else
-            begin 
-                test_mode=0;
-                test_en = 0;
-                write_en = 1;            
+                $display("Testing ", t2);
+            end else begin 
+                test_mode=0;                
+                //is_completed = 1;             
             end
+            test_en = 0;
         end
     end
     
@@ -670,70 +560,18 @@ module som
     
     always @(posedge clk) begin
         if (classify_x_en) begin
-            i = 0;
-            j = 0;
-            min_distance_next_index = 0;
-            min_distance = p_inf;
-            classify_x_en=0;
-            classify_init_en=1;
-        end
-    end
-    
-    always @(posedge clk) begin
-        if (classify_init_en) begin
-            distance_reset=1; 
-            comp_reset=1; 
-            for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
-                distance_in_1[assign_i] = weights[i][j][assign_i];
-                distance_in_2[assign_i] = testX[t1][assign_i];
-            end
-            distance_en=1;            
-            classify_init_en=0;
-        end
-    end
-    
-    always @(posedge clk) begin
-        if (distance_done && test_mode) begin
-            distance_en=0;
-
-            comp_in_1 = min_distance;
-            comp_in_2 = distance_out;
-            comp_en = 1;
-            
-            if (comp_done) begin
-                comp_en=0;
-                
+            distance_en=1;
+            distance_reset=0;
+            distance_X=testX[t2];
+            if (distance_done) begin                
+                distance_en=0;
                 distance_reset=1;
-                comp_reset=1;
-                
-                if (comp_out==0) begin
-                    minimum_distance_indices[min_distance_next_index][1] = i;
-                    minimum_distance_indices[min_distance_next_index][0] = j;
-                    min_distance_next_index = min_distance_next_index + 1;
-                
-                end else if (comp_out==1) begin
-                    min_distance = distance_out;
-                    minimum_distance_indices[0][1] = i;
-                    minimum_distance_indices[0][0] = j;                        
-                    min_distance_next_index = 1;
-                end
-                
-                if (j==COLS-1) begin
-                    j=0;
-                    i=i+1;
-                end else begin
-                    j=j+1;
-                end
-                
-                if (i==ROWS-1) begin
-                    bmu_en=1;
-                end else begin
-                    for(assign_i=0; assign_i<DIGIT_DIM; assign_i=assign_i+1) begin
-                        distance_in_1[assign_i] = weights[i][j][assign_i];
-                        distance_in_2[assign_i] = testX[t1][assign_i];
-                    end
-                    distance_en=1;
-                end
+                i = 0;
+                j = 0;
+                min_distance_next_index = 0;
+                min_distance = p_inf;
+                classify_x_en=0;
+                min_distance_en=1;
             end
         end
     end
@@ -743,11 +581,9 @@ module som
             bmu[1] = minimum_distance_indices[0][1];
             bmu[0] = minimum_distance_indices[0][0];
             
-            if (class_labels[bmu[1]][bmu[0]] == testY[t2])
-            begin
+            if (class_labels[bmu[1]][bmu[0]] == testY[t2]) begin
                 correct_predictions = correct_predictions + 1;                
             end
-            
             predictionY[t2] = class_labels[bmu[1]][bmu[0]];  
             bmu_en = 0;   
             test_en = 1;
@@ -757,12 +593,14 @@ module som
     integer fd;    
     always @(posedge clk) begin
         if (write_en) begin
-            fd = $fopen("/home/mad/Documents/fpga-isom/som/weight_out.data", "w");
-            i=0; j=0; k=0;
+            fd = $fopen("/home/aari/Projects/Vivado/fpga_som/som/weight_out.data", "w");
+//            i=0; j=0; k=0;
             for (i=0; i<=ROWS-1; i=i+1) begin
                 for (j=0; j<=COLS-1; j=j+1) begin
-                    for (k=DIM-1; k>=0; k=k-1) begin                        
+                    $display(i, j);
+                    for (k=DIM*DIGIT_DIM-1; k>=0; k=k-1) begin                        
                         $fwriteb(fd, weights[i][j][k]);
+                        $display(weights[i][j][k]);
                     end
                     $fwrite(fd, "\n");
                 end
@@ -772,8 +610,12 @@ module som
             is_completed = 1;   
         end
     end
-        
+
+    
     assign prediction = correct_predictions;
     assign completed = is_completed;
-
+    
 endmodule
+
+
+

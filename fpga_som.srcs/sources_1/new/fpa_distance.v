@@ -1,6 +1,10 @@
 `timescale 1ns / 1ps
 
 module fpa_distance
+#(
+    parameter DIM=4,
+    parameter DIGIT_DIM=32
+)
 (
     input wire clk,
     input wire en,
@@ -12,7 +16,7 @@ module fpa_distance
 );
 
 reg init=1;
-reg done;
+reg done=0;
 
 reg sub_en=0;
 reg sub_reset=0;
@@ -47,15 +51,13 @@ fpa_multiplier square_unit(
     .is_done(square_done)
 );
 
-assign is_done = done;
-assign num_out = square_out;
-
 always @(posedge clk) begin 
     if (en && init) begin  
         sub_in_1 = num1;
         sub_in_2 = num2;
-        sub_in_2[31] = 1; // make minus
+        sub_in_2[DIGIT_DIM-1] = ~sub_in_2[DIGIT_DIM-1]; // flip the sign bit
         sub_en=1;
+        sub_reset=0;
         init=0;
     end
     
@@ -63,9 +65,9 @@ always @(posedge clk) begin
         sub_en=0;
         sub_reset=1;
         
-        squrae_reset=0;
         square_in = subtraction_out;
         squrae_en=1;
+        squrae_reset=0;
     end
     
     if (square_done) begin 
@@ -80,5 +82,7 @@ always @(posedge reset) begin
     init=1;
 end
 
+assign is_done = done;
+assign num_out = square_out;
 
 endmodule

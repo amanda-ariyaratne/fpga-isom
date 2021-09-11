@@ -67,7 +67,6 @@ end
 
 always @(posedge clk) begin
     if (en && en_1) begin
-        $display("in 1");
         add_reset = 0;
         add_in_1 = weight;
         add_in_2 = train_row;
@@ -81,7 +80,6 @@ end
 
 always @(posedge clk) begin
     if (en && en_2 && add_done) begin
-    $display("in 2");
         en_add=0; // off adder module
         add_reset = 1;
         
@@ -97,7 +95,6 @@ end
 
 always @(posedge clk) begin
     if (en && en_3 && mul_done) begin
-    $display("in 3");
         en_mul=0; // off multi module
         mul_reset = 1;
         
@@ -113,7 +110,6 @@ end
 
 always @(posedge clk) begin
     if (en && en_4 && add_done) begin
-    $display("in 4");
         en_add = 0;
         add_reset=1;
         done=1;

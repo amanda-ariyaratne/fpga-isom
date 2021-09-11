@@ -20,7 +20,7 @@ reg done=0;
 reg init=1;                   
 reg add_all_init=0;
 reg wait_en = 0;
-
+reg [DIGIT_DIM-1:0] out=0;
 //////////////////////////////PART 1////////////////////////////
 ////////////////////distnace squer module///////////////////////
 reg dist_sqr_en=0;
@@ -33,15 +33,20 @@ wire [DIM-1:0] dist_sqr_is_done;
 
 
 ////////////////////Get all done to one variable///////////////////////
-genvar k;
-generate
-    for (k=1; k<=DIM; k=k+1) begin
-        assign dist_sqr_is_done[k-1] = dist_sqr_done[DIGIT_DIM*k-1];
-    end
-endgenerate
+//genvar k;
+//generate
+//    for (k=1; k<=DIM; k=k+1) begin
+//        assign dist_sqr_is_done[k-1] = dist_sqr_done[DIGIT_DIM*k-1];
+//    end
+//endgenerate
 
-assign dist_sqr_in_1 = weight;
-assign dist_sqr_in_2 = trainX;
+assign dist_sqr_is_done[1-1] = dist_sqr_done[DIGIT_DIM*1-1];
+assign dist_sqr_is_done[2-1] = dist_sqr_done[DIGIT_DIM*2-1];
+assign dist_sqr_is_done[3-1] = dist_sqr_done[DIGIT_DIM*3-1];
+assign dist_sqr_is_done[4-1] = dist_sqr_done[DIGIT_DIM*4-1];
+
+//assign dist_sqr_in_1 = weight;
+//assign dist_sqr_in_2 = trainX;
 
 ////////////////////parallel blocks for distance square///////////////////////
 genvar i;
@@ -51,8 +56,8 @@ generate
             .clk(clk),
             .en(dist_sqr_en),
             .reset(dist_sqr_reset),
-            .num1(dist_sqr_in_1[i-1 -:DIGIT_DIM]),
-            .num2(dist_sqr_in_2[i-1 -:DIGIT_DIM]),
+            .num1(weight[i-1 -:DIGIT_DIM]),
+            .num2(trainX[i-1 -:DIGIT_DIM]),
             .num_out(dist_sqr_out[i-1 -:DIGIT_DIM]),
             .is_done(dist_sqr_done[i-1])
         );
@@ -66,11 +71,12 @@ always @(posedge clk) begin
         dist_sqr_en=1;
         dist_sqr_reset=0;
         init=0;
+        
     end
 end
 
 always @(posedge clk) begin 
-    if (dist_sqr_is_done == {(DIM){1'b1}}) begin
+    if (en && (dist_sqr_is_done == {(DIM){1'b1}})) begin
         dist_sqr_en=0;
         dist_sqr_reset=1;
         add_all_init=1;
@@ -86,7 +92,7 @@ reg [DIGIT_DIM-1:0] add_all_in_2;
 wire [DIGIT_DIM-1:0] add_all_out;
 wire add_all_done;
 
-assign num_out = add_all_out;
+assign num_out = out;
 assign is_done = done;
 
 fpa_adder add_all(
@@ -120,6 +126,7 @@ always @(posedge clk) begin
         if (j > DIGIT_DIM*DIM) begin
             add_all_init = 0;
             done = 1;
+            out = add_all_out;
         end else 
             wait_en = 0;
     end
@@ -133,10 +140,10 @@ always @(posedge reset) begin
     add_all_init=0;
     
     dist_sqr_en=0;
-    dist_sqr_reset=0;
+    dist_sqr_reset=1;
     
     add_all_en=0;
-    add_all_reset=0;
+    add_all_reset=1;
     add_all_in_1=0;
     
     j=DIGIT_DIM;    

@@ -25,7 +25,6 @@ reg [1:0] max = 0;
 reg done=0;
 reg init=1;
 
-
 assign is_done = done;
 assign num_out = max;
 
