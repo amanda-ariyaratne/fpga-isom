@@ -1,0 +1,866 @@
+Vivado Simulator 2020.2
+Time resolution is 1 ps
+class frequnecy list initialized
+training_en
+iteration   0
+t1    0-  0
+All distance done for    0
+t1    1-  0
+All distance done for    1
+t1    2-  0
+All distance done for    2
+t1    3-  0
+All distance done for    3
+t1    4-  0
+All distance done for    4
+t1    5-  0
+All distance done for    5
+t1    6-  0
+All distance done for    6
+t1    7-  0
+All distance done for    7
+t1    8-  0
+All distance done for    8
+t1    9-  0
+All distance done for    9
+t1   10-  0
+All distance done for   10
+t1   11-  0
+All distance done for   11
+t1   12-  0
+All distance done for   12
+t1   13-  0
+All distance done for   13
+t1   14-  0
+All distance done for   14
+t1   15-  0
+All distance done for   15
+t1   16-  0
+All distance done for   16
+t1   17-  0
+All distance done for   17
+t1   18-  0
+All distance done for   18
+t1   19-  0
+All distance done for   19
+t1   20-  0
+All distance done for   20
+t1   21-  0
+All distance done for   21
+t1   22-  0
+All distance done for   22
+t1   23-  0
+All distance done for   23
+t1   24-  0
+All distance done for   24
+t1   25-  0
+All distance done for   25
+t1   26-  0
+All distance done for   26
+t1   27-  0
+All distance done for   27
+t1   28-  0
+All distance done for   28
+t1   29-  0
+All distance done for   29
+t1   30-  0
+All distance done for   30
+t1   31-  0
+All distance done for   31
+t1   32-  0
+All distance done for   32
+t1   33-  0
+All distance done for   33
+t1   34-  0
+All distance done for   34
+t1   35-  0
+All distance done for   35
+t1   36-  0
+All distance done for   36
+t1   37-  0
+All distance done for   37
+t1   38-  0
+All distance done for   38
+t1   39-  0
+All distance done for   39
+t1   40-  0
+All distance done for   40
+t1   41-  0
+All distance done for   41
+t1   42-  0
+All distance done for   42
+t1   43-  0
+All distance done for   43
+t1   44-  0
+All distance done for   44
+t1   45-  0
+All distance done for   45
+t1   46-  0
+All distance done for   46
+t1   47-  0
+All distance done for   47
+t1   48-  0
+All distance done for   48
+t1   49-  0
+All distance done for   49
+t1   50-  0
+All distance done for   50
+t1   51-  0
+All distance done for   51
+t1   52-  0
+All distance done for   52
+t1   53-  0
+All distance done for   53
+t1   54-  0
+All distance done for   54
+t1   55-  0
+All distance done for   55
+t1   56-  0
+All distance done for   56
+t1   57-  0
+All distance done for   57
+t1   58-  0
+All distance done for   58
+t1   59-  0
+All distance done for   59
+t1   60-  0
+All distance done for   60
+t1   61-  0
+All distance done for   61
+t1   62-  0
+All distance done for   62
+t1   63-  0
+All distance done for   63
+t1   64-  0
+All distance done for   64
+t1   65-  0
+All distance done for   65
+t1   66-  0
+All distance done for   66
+t1   67-  0
+All distance done for   67
+t1   68-  0
+All distance done for   68
+t1   69-  0
+All distance done for   69
+t1   70-  0
+All distance done for   70
+t1   71-  0
+All distance done for   71
+t1   72-  0
+All distance done for   72
+t1   73-  0
+All distance done for   73
+t1   74-  0
+All distance done for   74
+next_iteration_en   0
+iteration   1
+t1    0-  1
+ALPHA updated
+All distance done for    0
+t1    1-  1
+All distance done for    1
+t1    2-  1
+All distance done for    2
+t1    3-  1
+All distance done for    3
+t1    4-  1
+All distance done for    4
+t1    5-  1
+All distance done for    5
+t1    6-  1
+All distance done for    6
+t1    7-  1
+All distance done for    7
+t1    8-  1
+All distance done for    8
+t1    9-  1
+All distance done for    9
+t1   10-  1
+All distance done for   10
+t1   11-  1
+All distance done for   11
+t1   12-  1
+All distance done for   12
+t1   13-  1
+All distance done for   13
+t1   14-  1
+All distance done for   14
+t1   15-  1
+All distance done for   15
+t1   16-  1
+All distance done for   16
+t1   17-  1
+All distance done for   17
+t1   18-  1
+All distance done for   18
+t1   19-  1
+All distance done for   19
+t1   20-  1
+All distance done for   20
+t1   21-  1
+All distance done for   21
+t1   22-  1
+All distance done for   22
+t1   23-  1
+All distance done for   23
+t1   24-  1
+All distance done for   24
+t1   25-  1
+All distance done for   25
+t1   26-  1
+All distance done for   26
+t1   27-  1
+All distance done for   27
+t1   28-  1
+All distance done for   28
+t1   29-  1
+All distance done for   29
+t1   30-  1
+All distance done for   30
+t1   31-  1
+All distance done for   31
+t1   32-  1
+All distance done for   32
+t1   33-  1
+All distance done for   33
+t1   34-  1
+All distance done for   34
+t1   35-  1
+All distance done for   35
+t1   36-  1
+All distance done for   36
+t1   37-  1
+All distance done for   37
+t1   38-  1
+All distance done for   38
+t1   39-  1
+All distance done for   39
+t1   40-  1
+All distance done for   40
+t1   41-  1
+All distance done for   41
+t1   42-  1
+All distance done for   42
+t1   43-  1
+All distance done for   43
+t1   44-  1
+All distance done for   44
+t1   45-  1
+All distance done for   45
+t1   46-  1
+All distance done for   46
+t1   47-  1
+All distance done for   47
+t1   48-  1
+All distance done for   48
+t1   49-  1
+All distance done for   49
+t1   50-  1
+All distance done for   50
+t1   51-  1
+All distance done for   51
+t1   52-  1
+All distance done for   52
+t1   53-  1
+All distance done for   53
+t1   54-  1
+All distance done for   54
+t1   55-  1
+All distance done for   55
+t1   56-  1
+All distance done for   56
+t1   57-  1
+All distance done for   57
+t1   58-  1
+All distance done for   58
+t1   59-  1
+All distance done for   59
+t1   60-  1
+All distance done for   60
+t1   61-  1
+All distance done for   61
+t1   62-  1
+All distance done for   62
+t1   63-  1
+All distance done for   63
+t1   64-  1
+All distance done for   64
+t1   65-  1
+All distance done for   65
+t1   66-  1
+All distance done for   66
+t1   67-  1
+All distance done for   67
+t1   68-  1
+All distance done for   68
+t1   69-  1
+All distance done for   69
+t1   70-  1
+All distance done for   70
+t1   71-  1
+All distance done for   71
+t1   72-  1
+All distance done for   72
+t1   73-  1
+All distance done for   73
+t1   74-  1
+All distance done for   74
+next_iteration_en   1
+iteration   2
+t1    0-  2
+ALPHA updated
+All distance done for    0
+t1    1-  2
+All distance done for    1
+t1    2-  2
+All distance done for    2
+t1    3-  2
+All distance done for    3
+t1    4-  2
+All distance done for    4
+t1    5-  2
+All distance done for    5
+t1    6-  2
+All distance done for    6
+t1    7-  2
+All distance done for    7
+t1    8-  2
+All distance done for    8
+t1    9-  2
+All distance done for    9
+t1   10-  2
+All distance done for   10
+t1   11-  2
+All distance done for   11
+t1   12-  2
+All distance done for   12
+t1   13-  2
+All distance done for   13
+t1   14-  2
+All distance done for   14
+t1   15-  2
+All distance done for   15
+t1   16-  2
+All distance done for   16
+t1   17-  2
+All distance done for   17
+t1   18-  2
+All distance done for   18
+t1   19-  2
+All distance done for   19
+t1   20-  2
+All distance done for   20
+t1   21-  2
+All distance done for   21
+t1   22-  2
+All distance done for   22
+t1   23-  2
+All distance done for   23
+t1   24-  2
+All distance done for   24
+t1   25-  2
+All distance done for   25
+t1   26-  2
+All distance done for   26
+t1   27-  2
+All distance done for   27
+t1   28-  2
+All distance done for   28
+t1   29-  2
+All distance done for   29
+t1   30-  2
+All distance done for   30
+t1   31-  2
+All distance done for   31
+t1   32-  2
+All distance done for   32
+t1   33-  2
+All distance done for   33
+t1   34-  2
+All distance done for   34
+t1   35-  2
+All distance done for   35
+t1   36-  2
+All distance done for   36
+t1   37-  2
+All distance done for   37
+t1   38-  2
+All distance done for   38
+t1   39-  2
+All distance done for   39
+t1   40-  2
+All distance done for   40
+t1   41-  2
+All distance done for   41
+t1   42-  2
+All distance done for   42
+t1   43-  2
+All distance done for   43
+t1   44-  2
+All distance done for   44
+t1   45-  2
+All distance done for   45
+t1   46-  2
+All distance done for   46
+t1   47-  2
+All distance done for   47
+t1   48-  2
+All distance done for   48
+t1   49-  2
+All distance done for   49
+t1   50-  2
+All distance done for   50
+t1   51-  2
+All distance done for   51
+t1   52-  2
+All distance done for   52
+t1   53-  2
+All distance done for   53
+t1   54-  2
+All distance done for   54
+t1   55-  2
+All distance done for   55
+t1   56-  2
+All distance done for   56
+t1   57-  2
+All distance done for   57
+t1   58-  2
+All distance done for   58
+t1   59-  2
+All distance done for   59
+t1   60-  2
+All distance done for   60
+t1   61-  2
+All distance done for   61
+t1   62-  2
+All distance done for   62
+t1   63-  2
+All distance done for   63
+t1   64-  2
+All distance done for   64
+t1   65-  2
+All distance done for   65
+t1   66-  2
+All distance done for   66
+t1   67-  2
+All distance done for   67
+t1   68-  2
+All distance done for   68
+t1   69-  2
+All distance done for   69
+t1   70-  2
+All distance done for   70
+t1   71-  2
+All distance done for   71
+t1   72-  2
+All distance done for   72
+t1   73-  2
+All distance done for   73
+t1   74-  2
+All distance done for   74
+next_iteration_en   2
+iteration   3
+t1    0-  3
+ALPHA updated
+All distance done for    0
+t1    1-  3
+All distance done for    1
+t1    2-  3
+All distance done for    2
+t1    3-  3
+All distance done for    3
+t1    4-  3
+All distance done for    4
+t1    5-  3
+All distance done for    5
+t1    6-  3
+All distance done for    6
+t1    7-  3
+All distance done for    7
+t1    8-  3
+All distance done for    8
+t1    9-  3
+All distance done for    9
+t1   10-  3
+All distance done for   10
+t1   11-  3
+All distance done for   11
+t1   12-  3
+All distance done for   12
+t1   13-  3
+All distance done for   13
+t1   14-  3
+All distance done for   14
+t1   15-  3
+All distance done for   15
+t1   16-  3
+All distance done for   16
+t1   17-  3
+All distance done for   17
+t1   18-  3
+All distance done for   18
+t1   19-  3
+All distance done for   19
+t1   20-  3
+All distance done for   20
+t1   21-  3
+All distance done for   21
+t1   22-  3
+All distance done for   22
+t1   23-  3
+All distance done for   23
+t1   24-  3
+All distance done for   24
+t1   25-  3
+All distance done for   25
+t1   26-  3
+All distance done for   26
+t1   27-  3
+All distance done for   27
+t1   28-  3
+All distance done for   28
+t1   29-  3
+All distance done for   29
+t1   30-  3
+All distance done for   30
+t1   31-  3
+All distance done for   31
+t1   32-  3
+All distance done for   32
+t1   33-  3
+All distance done for   33
+t1   34-  3
+All distance done for   34
+t1   35-  3
+All distance done for   35
+t1   36-  3
+All distance done for   36
+t1   37-  3
+All distance done for   37
+t1   38-  3
+All distance done for   38
+t1   39-  3
+All distance done for   39
+t1   40-  3
+All distance done for   40
+t1   41-  3
+All distance done for   41
+t1   42-  3
+All distance done for   42
+t1   43-  3
+All distance done for   43
+t1   44-  3
+All distance done for   44
+t1   45-  3
+All distance done for   45
+t1   46-  3
+All distance done for   46
+t1   47-  3
+All distance done for   47
+t1   48-  3
+All distance done for   48
+t1   49-  3
+All distance done for   49
+t1   50-  3
+All distance done for   50
+t1   51-  3
+All distance done for   51
+t1   52-  3
+All distance done for   52
+t1   53-  3
+All distance done for   53
+t1   54-  3
+All distance done for   54
+t1   55-  3
+All distance done for   55
+t1   56-  3
+All distance done for   56
+t1   57-  3
+All distance done for   57
+t1   58-  3
+All distance done for   58
+t1   59-  3
+All distance done for   59
+t1   60-  3
+All distance done for   60
+t1   61-  3
+All distance done for   61
+t1   62-  3
+All distance done for   62
+t1   63-  3
+All distance done for   63
+t1   64-  3
+All distance done for   64
+t1   65-  3
+All distance done for   65
+t1   66-  3
+All distance done for   66
+t1   67-  3
+All distance done for   67
+t1   68-  3
+All distance done for   68
+t1   69-  3
+All distance done for   69
+t1   70-  3
+All distance done for   70
+t1   71-  3
+All distance done for   71
+t1   72-  3
+All distance done for   72
+t1   73-  3
+All distance done for   73
+t1   74-  3
+All distance done for   74
+next_iteration_en   3
+init_classification_en
+classify    0
+All distance done for    0
+classify    1
+All distance done for    1
+classify    2
+All distance done for    2
+classify    3
+All distance done for    3
+classify    4
+All distance done for    4
+classify    5
+All distance done for    5
+classify    6
+All distance done for    6
+classify    7
+All distance done for    7
+classify    8
+All distance done for    8
+classify    9
+All distance done for    9
+classify   10
+All distance done for   10
+classify   11
+All distance done for   11
+classify   12
+All distance done for   12
+classify   13
+All distance done for   13
+classify   14
+All distance done for   14
+classify   15
+All distance done for   15
+classify   16
+All distance done for   16
+classify   17
+All distance done for   17
+classify   18
+All distance done for   18
+classify   19
+All distance done for   19
+classify   20
+All distance done for   20
+classify   21
+All distance done for   21
+classify   22
+All distance done for   22
+classify   23
+All distance done for   23
+classify   24
+All distance done for   24
+classify   25
+All distance done for   25
+classify   26
+All distance done for   26
+classify   27
+All distance done for   27
+classify   28
+All distance done for   28
+classify   29
+All distance done for   29
+classify   30
+All distance done for   30
+classify   31
+All distance done for   31
+classify   32
+All distance done for   32
+classify   33
+All distance done for   33
+classify   34
+All distance done for   34
+classify   35
+All distance done for   35
+classify   36
+All distance done for   36
+classify   37
+All distance done for   37
+classify   38
+All distance done for   38
+classify   39
+All distance done for   39
+classify   40
+All distance done for   40
+classify   41
+All distance done for   41
+classify   42
+All distance done for   42
+classify   43
+All distance done for   43
+classify   44
+All distance done for   44
+classify   45
+All distance done for   45
+classify   46
+All distance done for   46
+classify   47
+All distance done for   47
+classify   48
+All distance done for   48
+classify   49
+All distance done for   49
+classify   50
+All distance done for   50
+classify   51
+All distance done for   51
+classify   52
+All distance done for   52
+classify   53
+All distance done for   53
+classify   54
+All distance done for   54
+classify   55
+All distance done for   55
+classify   56
+All distance done for   56
+classify   57
+All distance done for   57
+classify   58
+All distance done for   58
+classify   59
+All distance done for   59
+classify   60
+All distance done for   60
+classify   61
+All distance done for   61
+classify   62
+All distance done for   62
+classify   63
+All distance done for   63
+classify   64
+All distance done for   64
+classify   65
+All distance done for   65
+classify   66
+All distance done for   66
+classify   67
+All distance done for   67
+classify   68
+All distance done for   68
+classify   69
+All distance done for   69
+classify   70
+All distance done for   70
+classify   71
+All distance done for   71
+classify   72
+All distance done for   72
+classify   73
+All distance done for   73
+classify   74
+All distance done for   74
+classification_en STOPPED
+Class labelling
+Testing    0
+Testing    1
+Testing    2
+Testing    3
+Testing    4
+Testing    5
+Testing    6
+Testing    7
+Testing    8
+Testing    9
+Testing   10
+Testing   11
+Testing   12
+Testing   13
+Testing   14
+Testing   15
+Testing   16
+Testing   17
+Testing   18
+Testing   19
+Testing   20
+Testing   21
+Testing   22
+Testing   23
+Testing   24
+Testing   25
+Testing   26
+Testing   27
+Testing   28
+Testing   29
+Testing   30
+Testing   31
+Testing   32
+Testing   33
+Testing   34
+Testing   35
+Testing   36
+Testing   37
+Testing   38
+Testing   39
+Testing   40
+Testing   41
+Testing   42
+Testing   43
+Testing   44
+Testing   45
+Testing   46
+Testing   47
+Testing   48
+Testing   49
+Testing   50
+Testing   51
+Testing   52
+Testing   53
+Testing   54
+Testing   55
+Testing   56
+Testing   57
+Testing   58
+Testing   59
+Testing   60
+Testing   61
+Testing   62
+Testing   63
+Testing   64
+Testing   65
+Testing   66
+Testing   67
+Testing   68
+Testing   69
+Testing   70
+Testing   71
+Testing   72
+Testing   73
+Testing   74
+Testing   75
+Testing   76
+Testing   77
+Testing   78
+Testing   79
+Testing   80
+Testing   81
+Testing   82
+Testing   83
+Testing   84
+Testing   85
+Testing   86
+Testing   87
+Testing   88
+Testing   89
+Testing   90
+Testing   91
+Testing   92
+Testing   93
+Testing   94
+Testing   95
+Testing   96
+Testing   97

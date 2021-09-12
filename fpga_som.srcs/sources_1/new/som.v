@@ -19,20 +19,21 @@ module som
         parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 2, 
         
-        parameter TOTAL_ITERATIONS=12,              
-        parameter LOG2_TOT_ITERATIONS = 4,
-        parameter ITERATION_STEP = 3, 
+        parameter TOTAL_ITERATIONS=4,              
+        parameter LOG2_TOT_ITERATIONS = 3,
+        
         
         parameter INITIAL_NB_RADIUS = 3,
-        parameter NB_RADIUS_STEP = 3,
-        parameter LOG2_NB_RADIUS = 2,
-        parameter ITERATION_NB_STEP = 3,
-        parameter N_STEP = 4,
+        parameter NB_RADIUS_STEP = 1,
+        parameter LOG2_NB_RADIUS = 3,
+        parameter ITERATION_NB_STEP = 1,
+        parameter N_STEP = 4, // 1*4
         
         parameter INITIAL_ALPHA = 32'b00111111011001100110011001100110, //0.9
-        parameter ALPHA_STEP = 32'b00111110010011001100110011001101,//0.1
-        parameter A_STEP = 4,
+        parameter ALPHA_STEP = 32'b00111110010011001100110011001101,//0.2
         parameter LOG2_ALPHA = 32,
+        parameter ITERATION_STEP = 1, 
+        parameter A_STEP = 4, // 1*4
         // 0.9 = 32'b00111111011001100110011001100110
         // 0.1 - 32'b00111101110011001100110011001101
         // 0.2 - 32'b00111110010011001100110011001101
@@ -132,8 +133,7 @@ module som
                 end
             end
         end
-//        training_en = 1;
-        write_en=1;
+        training_en = 1;
         $display("class frequnecy list initialized");
     end
     
@@ -456,6 +456,8 @@ module som
     
     always @(posedge clk) begin
         if (update_done || not_man_dist_en) begin
+            if (update_done)
+                weights[bmu_i][bmu_j] = update_out;
             update_en=0;
             update_reset=1;
             
@@ -548,7 +550,7 @@ module som
                 $display("Testing ", t2);
             end else begin 
                 test_mode=0;                
-                //is_completed = 1;             
+                write_en=1;             
             end
             test_en = 0;
         end
@@ -594,14 +596,9 @@ module som
     always @(posedge clk) begin
         if (write_en) begin
             fd = $fopen("/home/aari/Projects/Vivado/fpga_som/som/weight_out.data", "w");
-//            i=0; j=0; k=0;
             for (i=0; i<=ROWS-1; i=i+1) begin
                 for (j=0; j<=COLS-1; j=j+1) begin
-                    $display(i, j);
-                    for (k=DIM*DIGIT_DIM-1; k>=0; k=k-1) begin                        
-                        $fwriteb(fd, weights[i][j][k]);
-                        $display(weights[i][j][k]);
-                    end
+                    $fwriteb(fd, weights[i][j]);
                     $fwrite(fd, "\n");
                 end
             end
