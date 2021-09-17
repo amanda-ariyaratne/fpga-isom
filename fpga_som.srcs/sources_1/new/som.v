@@ -19,21 +19,21 @@ module som
         parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 2, 
         
-        parameter TOTAL_ITERATIONS=4,              
-        parameter LOG2_TOT_ITERATIONS = 3,
+        parameter TOTAL_ITERATIONS=50,              
+        parameter LOG2_TOT_ITERATIONS = 6,
         
         
         parameter INITIAL_NB_RADIUS = 3,
         parameter NB_RADIUS_STEP = 1,
         parameter LOG2_NB_RADIUS = 3,
-        parameter ITERATION_NB_STEP = 1,
+        parameter ITERATION_NB_STEP = 13,
         parameter N_STEP = 4, // 1*4
         
         parameter INITIAL_ALPHA = 32'b00111111011001100110011001100110, //0.9
-        parameter ALPHA_STEP = 32'b00111110010011001100110011001101,//0.2
+        parameter ALPHA_STEP = 32'b00111101110011001100110011001101,//0.1
         parameter LOG2_ALPHA = 32,
-        parameter ITERATION_STEP = 1, 
-        parameter A_STEP = 4, // 1*4
+        parameter ITERATION_STEP = 10, 
+        parameter A_STEP = 5, // 1*4
         // 0.9 = 32'b00111111011001100110011001100110
         // 0.1 - 32'b00111101110011001100110011001101
         // 0.2 - 32'b00111110010011001100110011001101
@@ -316,7 +316,7 @@ module som
     reg comp_en=0;
     reg comp_reset=0;
     
-    fpa_comparator get_max(
+    fpa_comparator get_min(
         .clk(clk),
         .en(comp_en),
         .reset(comp_reset),
@@ -329,19 +329,32 @@ module som
     always @(posedge clk) begin
         if (dist_enable) begin
             distance_X=trainX[t1];
-            distance_en=1;
             distance_reset=0;
+            distance_en=1;
             
-            if (distance_done) begin
-                $display("All distance done for ", t1);
-                distance_en=0;
-                distance_reset=1;
+            if (distance_done == {ROWS*COLS{1'b1}}) begin
+//                $display("All distance done for ", t1);
+//                $display("input %h", trainX[t1]);
+//                $display("input %b", trainX[t1]);
+//                $display("5 0 weight %b distance %b", weights[9][0], distance_out[9][0]);
+//                $display("1 1 weight %b distance %b", weights[9][1], distance_out[9][1]);
+//                $display("1 2 weight %b distance %b", weights[9][2], distance_out[9][2]);
+//                $display("1 3 weight %b distance %b", weights[9][3], distance_out[9][3]);
+//                $display("1 4 weight %b distance %b", weights[9][4], distance_out[9][4]);
+//                $display("1 5 weight %b distance %b", weights[9][5], distance_out[9][5]);
+//                $display("1 6 weight %b distance %b", weights[9][6], distance_out[9][6]);
+//                $display("1 7 weight %b distance %b", weights[9][7], distance_out[9][7]);
+//                $display("1 8 weight %b distance %b", weights[9][8], distance_out[9][8]);
+//                $display("1 9 weight %b distance %b", weights[9][9], distance_out[9][9]);
+//                                    is_completed = 1;
+                distance_en = 0;
+                distance_reset = 1;
                 i = 0;
                 j = 0;
                 min_distance_next_index = 0;
                 min_distance = p_inf;
-                dist_enable=0;
-                min_distance_en=1;
+                dist_enable = 0;
+                min_distance_en = 1;
             end
         end
     end
@@ -350,25 +363,29 @@ module som
         if (min_distance_en) begin
             comp_in_1 = min_distance;
             comp_in_2 = distance_out[i][j];
-            comp_en = 1;
             comp_reset = 0;
+            comp_en = 1;
             
             if (comp_done) begin
                 comp_en = 0;
                 comp_reset = 1;
                 
                 if (comp_out==0) begin
+//                    $display(i, j, "    current distance is equal to min distance");
                     minimum_distance_indices[min_distance_next_index][1] = i;
                     minimum_distance_indices[min_distance_next_index][0] = j;
                     min_distance_next_index = min_distance_next_index + 1;
                 
                 end else if (comp_out==1) begin
+//                    $display(i, j, "    current distance is less than min distance");
                     min_distance = distance_out[i][j];
                     minimum_distance_indices[0][1] = i;
                     minimum_distance_indices[0][0] = j;                        
                     min_distance_next_index = 1;
-                end
+                    
+                end 
                 
+//                $display("i, j, distance %h", distance_out[i][j],   i,  j);
                 if (j==COLS-1) begin
                     j=0;
                     i=i+1;
@@ -376,7 +393,7 @@ module som
                     j=j+1;
                 end
                 
-                if (i==ROWS-1) begin
+                if (i==ROWS) begin
                     min_distance_en=0;
                     bmu_en=1;
                 end
@@ -386,9 +403,13 @@ module som
     
     always @(posedge clk) begin
         if (bmu_en && !test_mode) begin            
-            bmu[1] = minimum_distance_indices[0][1];
-            bmu[0] = minimum_distance_indices[0][0];
+            bmu[1] = minimum_distance_indices[min_distance_next_index-1][1];
+            bmu[0] = minimum_distance_indices[min_distance_next_index-1][0];
             
+            $display("min distance %b", min_distance);
+//            $display("distance out of 2 1 %b", distance_out[1][2]);
+            $display("bmu ", bmu[1], bmu[0]);
+                 
             if (!classification_en)
                 init_neigh_search_en = 1;
             else
@@ -423,19 +444,24 @@ module som
     reg update_reset=0;
     reg [DIGIT_DIM*DIM-1:0] update_in_1;
     reg [DIGIT_DIM*DIM-1:0] update_in_2;
-    wire [DIGIT_DIM-1:0] update_out;
-    wire update_done;
+    wire [DIGIT_DIM*DIM-1:0] update_out;
+    wire [DIM-1:0] update_done;
     
-    fpa_update_weight update(
-        .clk(clk),
-        .en(update_en),
-        .reset(update_reset),
-        .weight(update_in_1),
-        .train_row(alpha),
-        .alpha(update_in_2),
-        .num_out(update_out),
-        .is_done(update_done)
-    );
+    genvar update_i;
+    generate
+        for (update_i=1; update_i<=DIM; update_i=update_i+1) begin
+            fpa_update_weight update(
+            .clk(clk),
+            .en(update_en),
+            .reset(update_reset),
+            .weight(update_in_1[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
+            .train_row(update_in_2[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
+            .alpha(alpha),
+            .num_out(update_out[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
+            .is_done(update_done[update_i-1])
+        );
+        end
+    endgenerate
     
     reg not_man_dist_en = 0;
 
@@ -443,35 +469,47 @@ module som
         if (nb_search_en && !update_en) begin  
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
-            
             if (man_dist <= nb_radius) begin
+//                $display("Accepted " , bmu_i, bmu_j);
                 update_in_1 = weights[bmu_i][bmu_j];
                 update_in_2 = trainX[t1];
                 update_en=1; 
                 update_reset=0;             
-            end else
+            end else begin
                 not_man_dist_en = 1;
+                nb_search_en = 0;
+            end
         end
     end
     
     always @(posedge clk) begin
-        if (update_done || not_man_dist_en) begin
-            if (update_done)
+        if ((update_done == {DIM{1'b1}}) || not_man_dist_en) begin
+            if (update_done == {DIM{1'b1}}) begin
+//                $display("before", weights[bmu_i][bmu_j]);
                 weights[bmu_i][bmu_j] = update_out;
-            update_en=0;
-            update_reset=1;
-            
+                update_en=0;
+                update_reset=1;
+//                $display("AFTER UPDATING", weights[bmu_i][bmu_j]);  
+            end          
+                
             bmu_j = bmu_j + 1;
             
             if (bmu_j == bmu_y+nb_radius+1 || bmu_j == COLS) begin
                 bmu_j = (bmu_y-nb_radius) < 0 ? 0 : (bmu_y-nb_radius);                
                 bmu_i = bmu_i + 1;
-            end            
-            if (bmu_i == bmu_x+nb_radius+1 || bmu_i==ROWS) begin
-                nb_search_en = 0; // neighbourhood search finished        
-                next_x_en = 1; // go to the next input
+                
+                if (bmu_i == bmu_x+nb_radius+1 || bmu_i==ROWS) begin
+                    nb_search_en = 0; // neighbourhood search finished        
+                    next_x_en = 1; // go to the next input
+                end else
+                    nb_search_en = 1; // next neighbour
+                
+                not_man_dist_en = 0; // close this block
+                
+            end else begin
+                nb_search_en = 1; // next neighbour
+                not_man_dist_en = 0; // close this block
             end
-            not_man_dist_en = 0;
         end
     end
     
@@ -482,7 +520,6 @@ module som
     
     always @(posedge clk) begin
         if (class_label_en) begin
-            $display("Class labelling");
             i=0;j=0;k=0;
             for(i=0;i<ROWS;i=i+1)
             begin
@@ -547,7 +584,6 @@ module som
             if (t2<TEST_ROWS-1) begin
                 t2 = t2 + 1;                
                 classify_x_en = 1;
-                $display("Testing ", t2);
             end else begin 
                 test_mode=0;                
                 write_en=1;             
@@ -580,8 +616,8 @@ module som
     
     always @(posedge clk) begin
         if (bmu_en && test_mode) begin
-            bmu[1] = minimum_distance_indices[0][1];
-            bmu[0] = minimum_distance_indices[0][0];
+            bmu[1] = minimum_distance_indices[min_distance_next_index-1][1];
+            bmu[0] = minimum_distance_indices[min_distance_next_index-1][0];
             
             if (class_labels[bmu[1]][bmu[0]] == testY[t2]) begin
                 correct_predictions = correct_predictions + 1;                
