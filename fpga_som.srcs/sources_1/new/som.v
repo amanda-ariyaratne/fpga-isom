@@ -332,20 +332,6 @@ module som
             distance_en=1;
             
             if (distance_done == {ROWS*COLS{1'b1}}) begin
-//                $display("All distance done for ", t1);
-//                $display("input %h", trainX[t1]);
-//                $display("input %b", trainX[t1]);
-//                $display("5 0 weight %b distance %b", weights[9][0], distance_out[9][0]);
-//                $display("1 1 weight %b distance %b", weights[9][1], distance_out[9][1]);
-//                $display("1 2 weight %b distance %b", weights[9][2], distance_out[9][2]);
-//                $display("1 3 weight %b distance %b", weights[9][3], distance_out[9][3]);
-//                $display("1 4 weight %b distance %b", weights[9][4], distance_out[9][4]);
-//                $display("1 5 weight %b distance %b", weights[9][5], distance_out[9][5]);
-//                $display("1 6 weight %b distance %b", weights[9][6], distance_out[9][6]);
-//                $display("1 7 weight %b distance %b", weights[9][7], distance_out[9][7]);
-//                $display("1 8 weight %b distance %b", weights[9][8], distance_out[9][8]);
-//                $display("1 9 weight %b distance %b", weights[9][9], distance_out[9][9]);
-//                                    is_completed = 1;
                 distance_en = 0;
                 distance_reset = 1;
                 i = 0;
@@ -370,13 +356,11 @@ module som
                 comp_reset = 1;
                 
                 if (comp_out==0) begin
-//                    $display(i, j, "    current distance is equal to min distance");
                     minimum_distance_indices[min_distance_next_index][1] = i;
                     minimum_distance_indices[min_distance_next_index][0] = j;
                     min_distance_next_index = min_distance_next_index + 1;
                 
                 end else if (comp_out==1) begin
-//                    $display(i, j, "    current distance is less than min distance");
                     min_distance = distance_out[i][j];
                     minimum_distance_indices[0][1] = i;
                     minimum_distance_indices[0][0] = j;                        
@@ -384,7 +368,6 @@ module som
                     
                 end 
                 
-//                $display("i, j, distance %h", distance_out[i][j],   i,  j);
                 if (j==COLS-1) begin
                     j=0;
                     i=i+1;
@@ -405,10 +388,6 @@ module som
             bmu[1] = minimum_distance_indices[min_distance_next_index-1][1];
             bmu[0] = minimum_distance_indices[min_distance_next_index-1][0];
             
-            $display("min distance %b", min_distance);
-//            $display("distance out of 2 1 %b", distance_out[1][2]);
-            $display("bmu ", bmu[1], bmu[0]);
-                 
             if (!classification_en)
                 init_neigh_search_en = 1;
             else
@@ -469,7 +448,6 @@ module som
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
             if (man_dist <= nb_radius) begin
-//                $display("Accepted " , bmu_i, bmu_j);
                 update_in_1 = weights[bmu_i][bmu_j];
                 update_in_2 = trainX[t1];
                 update_en=1; 
@@ -484,11 +462,9 @@ module som
     always @(posedge clk) begin
         if ((update_done == {DIM{1'b1}}) || not_man_dist_en) begin
             if (update_done == {DIM{1'b1}}) begin
-//                $display("before", weights[bmu_i][bmu_j]);
                 weights[bmu_i][bmu_j] = update_out;
                 update_en=0;
                 update_reset=1;
-//                $display("AFTER UPDATING", weights[bmu_i][bmu_j]);  
             end          
                 
             bmu_j = bmu_j + 1;
