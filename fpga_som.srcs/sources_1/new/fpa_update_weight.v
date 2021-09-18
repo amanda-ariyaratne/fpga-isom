@@ -25,7 +25,7 @@ reg done=0;
 reg [31:0] add_in_1;
 reg [31:0] add_in_2;
 wire [31:0] add_out;
-wire [1:0] add_done;
+wire add_done;
 
 reg [31:0] mul_in_1;
 reg [31:0] mul_in_2;
@@ -70,7 +70,7 @@ always @(posedge clk) begin
         add_reset = 0;
         add_in_1 = weight;
         add_in_2 = train_row;
-        add_in_2[31] = 1; // indicate subtraction
+        add_in_1[31] = 1; // indicate subtraction
         en_add = 1; // on the adder module
         
         en_1=0; // off this block

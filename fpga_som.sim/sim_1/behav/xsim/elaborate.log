@@ -4,6 +4,7 @@ Running: /opt/Xilinx/Vivado/2020.2/bin/unwrapped/lnx64.o/xelab -wto c97a37bdf686
 Using 8 slave threads.
 Starting static elaboration
 Pass Through NonSizing Optimizer
+WARNING: [VRFC 10-3091] actual bit length 2 differs from formal bit length 1 for port 'is_done' [/home/aari/Projects/Vivado/fpga_som/fpga_som.srcs/sources_1/new/fpa_update_weight.v:60]
 Completed static elaboration
 Starting simulation data flow analysis
 WARNING: [XSIM 43-4099] "/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v" Line 1. Module gsom doesn't have a timescale but at least one module in design has a timescale.

@@ -25,6 +25,7 @@
 *.saif
 *.tcf
 *.wdb
+*.wdf
 
 ## others
 unisims
@@ -63,3 +64,11 @@ xvlog.*
 
 ## checkpoint files
 *.dcp
+
+# new
+*.wpc
+*.wdf
+*.sh
+*.jou
+*.log
+*.pb
