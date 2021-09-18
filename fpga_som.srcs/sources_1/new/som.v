@@ -138,8 +138,7 @@ module som
     end
     
     ///////////////////////////////////////////////////////*******************Start Training***********/////////////////////////////////////
-    always @(posedge clk)
-    begin
+    always @(posedge clk) begin
         if (training_en) begin
             $display("training_en");
             iteration = -1;
@@ -631,7 +630,7 @@ module som
     integer fd;    
     always @(posedge clk) begin
         if (write_en) begin
-            fd = $fopen("/home/aari/Projects/Vivado/fpga_som/som/weight_out.data", "w");
+            fd = $fopen("/home/mad/Documents/Projects/fpga-isom/som/weight_out.data", "w");
             for (i=0; i<=ROWS-1; i=i+1) begin
                 for (j=0; j<=COLS-1; j=j+1) begin
                     $fwriteb(fd, weights[i][j]);
