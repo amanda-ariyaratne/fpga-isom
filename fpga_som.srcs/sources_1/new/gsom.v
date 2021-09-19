@@ -39,7 +39,7 @@ module gsom
         parameter initial_learning_rate=32'h3E99999A, // 0.3
         parameter smooth_learning_factor= 32'h3F4CCCCD, //0.8
         parameter max_radius=4,
-        parameter FD=32'h3DCCCCCD, //0.1
+        parameter FD=32'h3F8CCCCD, //0.1
         parameter r=32'h40733333, //3.8
         parameter alpha=32'h3F666666, //0.9
         parameter initial_node_size=30000
@@ -524,14 +524,14 @@ module gsom
     end
     
     reg signed [LOG2_NODE_SIZE:0] leftx, lefty, rightx, righty, upx, upy, bottomx, bottomy;
-    reg signed [LOG2_NODE_SIZE:0] leftx_abs, lefty_abs, rightx_abs, righty_abs, upx_abs, upy_abs, bottomx_abs, bottomy_abs;
+    reg [LOG2_NODE_SIZE:0] left, right, up, bottom;
     
     reg [LOG2_NODE_SIZE:0] x, y;
     reg [LOG2_NODE_SIZE:0] abs_x, abs_y;
     reg [1:0] x_y_signs;
     reg is_exist=0;
     reg check_in_map_done=0;
-    
+    reg [LOG2_NODE_SIZE:0] map_idx;
     
     always @(posedge clk) begin
         if (check_in_map_en) begin
@@ -543,13 +543,21 @@ module gsom
             x_y_signs[1] = y>0 ? 0 : 1;
             
             if ((map[abs_x][abs_y][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==0)) begin
+                map_idx = map[abs_x][abs_y][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
                 is_exist = 1;
+                
             end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==1)) begin
+                map_idx = map[abs_x][abs_y][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE];
                 is_exist = 1;
+                
             end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==1) && (x_y_signs[1]==0)) begin
+                map_idx = map[abs_x][abs_y][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE];
                 is_exist = 1;
+                
             end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==1) && (x_y_signs[1]==1)) begin
+                map_idx = map[abs_x][abs_y][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE];
                 is_exist = 1;
+                
             end else begin
                 is_exist = 0;
             end
@@ -559,9 +567,29 @@ module gsom
     end
     
     reg [3:0] spreadable;
+    reg [LOG2_NODE_SIZE-1:0] spreadable_idx [3:0];
     reg [1:0] is_spreadable_finished_idx;
-    
 
+    reg update_error_en = 0;
+    reg update_error_reset = 0;
+    wire [DIGIT_DIM-1:0] updated_error [3:0];
+    wire [3:0] update_error_done;    
+    
+    genvar error_i;
+    generate 
+        for(error_i=0;error_i<4;error_i=error_i+1) begin
+            fpa_multiplier update_error(
+                .clk(clk),
+                .en(update_error_en),
+                .reset(update_error_reset),
+                .num1(node_errors[spreadable_idx[error_i]]),
+                .num2(fd),
+                .num_out(updated_error[error_i]),
+                .is_done(update_error_done[error_i])
+            );
+        end
+    endgenerate
+    
     always @(posedge clk) begin
         if (adjust_weights_en) begin
             comp_reset = 0;
@@ -589,18 +617,9 @@ module gsom
             end
         end
         
-        if (is_spreadable_finished_idx == 3) begin // checked all neighbours exist
-            if (spreadable == 4'b1) begin
-                spread_weighs_en=1;
-            end else begin
-                grow_nodes_en=1;
-            end
-            is_spreadable_finished_idx = 0;            
-        end
-        
         if (check_in_map_done) begin
             spreadable[is_spreadable_finished_idx] = is_exist;
-            
+            spreadable_idx[is_spreadable_finished_idx] = map_idx;
             check_in_map_en = 1;
             check_in_map_done = 0;
 
@@ -619,6 +638,38 @@ module gsom
             end else begin
                 check_in_map_en = 0;
             end 
+        end
+        
+        if (is_spreadable_finished_idx == 3) begin // checked all neighbours exist
+            if (spreadable == 4'b1) begin
+                spread_weighs_en=1;
+            end else begin
+                grow_nodes_en=1;
+            end
+            is_spreadable_finished_idx = 0;            
+        end
+        
+        if (spread_weighs_en) begin
+            node_errors[rmu] = growth_threshold;
+            node_errors[rmu][30:23] = growth_threshold[30:23] - 1; // divide by 2 => exp-1
+            update_error_en = 1;
+            update_error_reset = 0;
+        end
+        
+        if (update_error_done == 4'b1) begin
+            update_error_en = 0;
+            update_error_reset = 1;
+            node_errors[spreadable_idx[0]] = updated_error[0];
+            node_errors[spreadable_idx[1]] = updated_error[1];
+            node_errors[spreadable_idx[2]] = updated_error[2];
+            node_errors[spreadable_idx[3]] = updated_error[3];      
+            
+            // start smoothing
+            smoothing_en = 1;      
+        end
+        
+        if (grow_nodes_en) begin
+            // grow nodes
         end
     end
     
