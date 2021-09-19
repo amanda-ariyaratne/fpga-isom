@@ -9,13 +9,14 @@ module gsom
         parameter INIT_ROWS = 2,
         parameter INIT_COLS = 2,
         
-        parameter ROWS = 30,
-        parameter LOG2_ROWS = 5, 
-        parameter COLS = 30,
-        parameter LOG2_COLS = 5,
+        parameter MAX_ROWS = 100,
+        parameter MAX_COLS = 100,
         
-        parameter MAX_NODE_SIZE = 100,
-        parameter LOG2_NODE_SIZE = 7,
+        parameter LOG2_ROWS = 7,         
+        parameter LOG2_COLS = 7,
+
+        parameter MAX_NODE_SIZE = 10000,
+        parameter LOG2_NODE_SIZE = 14,
         
         parameter GROWING_ITERATIONS = 100,
         parameter LOG2_GROWING_ITERATIONS = 7,
@@ -34,14 +35,13 @@ module gsom
         parameter spread_factor = 32'h3F000000, //0.5
         parameter spread_factor_logval = 32'hBE9A209B, // BE9A209B = -0.30102999566
         
-        parameter dimensions = 4,
         parameter dimensions_ieee754 = 32'h40800000, // 4
         parameter initial_learning_rate=32'h3E99999A, // 0.3
         parameter smooth_learning_factor= 32'h3F4CCCCD, //0.8
         parameter max_radius=4,
-        parameter FD=0.1,
-        parameter r=3.8,
-        parameter alpha=0.9,
+        parameter FD=32'h3DCCCCCD, //0.1
+        parameter r=32'h40733333, //3.8
+        parameter alpha=32'h3F666666, //0.9
         parameter initial_node_size=30000
 
     )(
@@ -50,6 +50,9 @@ module gsom
     
     localparam [DIGIT_DIM-1:0] p_inf = 32'b0111_1111_1111_1111_1111_1111_1111_1111;
     localparam [DIGIT_DIM-1:0] n_inf = 32'b1111_1111_1111_1111_1111_1111_1111_1111;
+    
+    localparam delta_growing_iter = 34;
+    localparam delta_smoothing_iter = 17;
     
     reg signed [LOG2_ROWS:0] i = 0;
     reg signed [LOG2_COLS:0] j = 0;
@@ -81,15 +84,13 @@ module gsom
         $readmemb("gsom_weights.mem", random_weights);
     end
     
-    localparam MAX_ROWS = 10;
-    localparam MAX_COLS = 10;
+    
     
     reg [LOG2_NODE_SIZE-1:0] node_count = 0;
     reg [DIGIT_DIM-1:0] node_count_ieee754 = 32'h00000000;
-    reg [LOG2_NODE_SIZE-1:0] map [ROWS-1:0][COLS-1:0];
     reg [(DIM*DIGIT_DIM)-1:0] node_list [MAX_NODE_SIZE-1:0];
     reg [LOG2_NODE_SIZE-1:0] node_coords [MAX_NODE_SIZE-1:0][1:0];
-    reg signed [LOG2_NODE_SIZE*4-1:0] node_coords_valid [MAX_ROWS-1:0][MAX_COLS-1:0];
+    reg signed [LOG2_NODE_SIZE*4-1:0] map [MAX_ROWS-1:0][MAX_COLS-1:0];
     reg [DIGIT_DIM-1:0] node_errors [MAX_NODE_SIZE-1:0];
     reg [DIGIT_DIM-1:0] growth_threshold;
     reg signed [3:0] radius;
@@ -106,6 +107,23 @@ module gsom
     reg init_gsom = 0;
     reg init_variables = 0;
     reg fit_en = 0;
+    reg get_LR_en = 0;
+    reg grow_en = 0;
+    reg adjust_weights_en=0;
+    reg check_in_map_en = 0;
+    reg smoothing_en=0;
+    reg spread_weighs_en=0;
+    reg grow_nodes_en=0;
+    
+    reg dist_enable = 0;
+    reg init_neigh_search_en=0;  
+    reg nb_search_en=0;
+    reg write_en = 0;
+    reg is_completed = 0;
+    reg min_distance_en=0;
+    reg bmu_en=0;
+    reg test_mode=0;
+    reg classification_en=0;
     
     reg next_iteration_en = 0;
     reg next_t1_en = 0;
@@ -132,7 +150,7 @@ module gsom
             for (i=0; i<MAX_ROWS;i=i+1) begin
                 for (j=0; j<MAX_COLS;j=j+1) begin
                     for (k=LOG2_NODE_SIZE; k<=LOG2_NODE_SIZE*4;k=k+LOG2_NODE_SIZE) begin
-                        node_coords_valid[i][j][k-1 -:LOG2_NODE_SIZE] <= -1;
+                        map[i][j][k-1 -:LOG2_NODE_SIZE] <= -1;
                     end
                 end    
             end
@@ -152,28 +170,28 @@ module gsom
             node_coords[node_count][0] = 1;
             node_coords[node_count][1] = 1;
             node_count = node_count + 1;            
-            node_coords_valid[1][1][LOG2_NODE_SIZE-1:0] = node_count;
+            map[1][1][LOG2_NODE_SIZE-1:0] = node_count;
             
             map[1][0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 1;
             node_coords[node_count][1] = 0;
             node_count = node_count + 1;
-            node_coords_valid[1][0][LOG2_NODE_SIZE-1:0] = node_count;
+            map[1][0][LOG2_NODE_SIZE-1:0] = node_count;
             
             map[0][1] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 0;
             node_coords[node_count][1] = 1;
             node_count = node_count + 1;
-            node_coords_valid[0][1][LOG2_NODE_SIZE-1:0] = node_count;
+            map[0][1][LOG2_NODE_SIZE-1:0] = node_count;
             
             map[0][0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 0;
             node_coords[node_count][1] = 0;
             node_count = node_count + 1;
-            node_coords_valid[0][0][LOG2_NODE_SIZE-1:0] = node_count;
+            map[0][0][LOG2_NODE_SIZE-1:0] = node_count;
             
             node_count_ieee754 = 32'h40800000; // 4
             
@@ -186,7 +204,7 @@ module gsom
             
             // growth threshold            
             mul_num1 = dimensions_ieee754;
-            mul_num2 = dimensions_ieee754;
+            mul_num2 = spread_factor_logval;
             mul_en = 1;
             mul_reset = 0;
             
@@ -195,13 +213,12 @@ module gsom
         
         if (mul_is_done) begin
             growth_threshold = mul_num_out;
+            growth_threshold[DIGIT_DIM-1] = 0; //make the value positive
             mul_en = 0;
             mul_reset = 1;
             fit_en = 1;
         end
     end
-    
-    reg get_LR_en = 0;
     
     always @(posedge clk) begin
         if (fit_en) begin
@@ -213,24 +230,18 @@ module gsom
     
     reg lr_en = 0;
     reg lr_reset = 0;
-    reg [DIGIT_DIM-1:0] lr_node_count;
-    reg [DIGIT_DIM-1:0] lr_prev_learning_rate;
     wire [DIGIT_DIM-1:0] lr_out;
     wire lr_is_done;
     
     gsom_learning_rate lr(
         .clk(clk), .en(lr_en), .reset(lr_reset),
-        .node_count(lr_node_count),
-        .prev_learning_rate(lr_prev_learning_rate),
+        .node_count(node_count_ieee754),
+        .prev_learning_rate(current_learning_rate),
         .alpha(alpha),
         .learning_rate(lr_out),
         .is_done(lr_is_done)
     );
-        
-    localparam delta_growing_iter = 34;
-    localparam delta_smoothing_iter = 17;
     
-    reg grow_en = 0;
     always @(posedge clk) begin
         if (next_iteration_en) begin
             if (iteration < GROWING_ITERATIONS) begin
@@ -259,9 +270,6 @@ module gsom
         if (get_LR_en) begin
             lr_en = 1;
             lr_reset = 0;
-            lr_node_count = node_count_ieee754;
-            lr_prev_learning_rate = current_learning_rate;
-            
             get_LR_en = 0;
         end        
         if (lr_is_done) begin
@@ -279,15 +287,7 @@ module gsom
         end
     end
     
-    reg dist_enable = 0;
-    reg init_neigh_search_en=0;  
-    reg nb_search_en=0;
-    reg write_en = 0;
-    reg is_completed = 0;
-    reg min_distance_en=0;
-    reg bmu_en=0;
-    reg test_mode=0;
-    reg classification_en=0;
+
     
     always @(posedge clk) begin
         if (next_t1_en) begin
@@ -311,15 +311,8 @@ module gsom
     reg [LOG2_NODE_SIZE:0] minimum_distance_1D_indices [MAX_NODE_SIZE:0];
     reg [LOG2_DIM-1:0] min_distance_next_index = 0;
     
-    reg [LOG2_DIM:0] hash_count;    
-    reg [LOG2_DIM:0] min_hash_count;
-    reg [LOG2_DIM:0] hash_counts [ROWS-1:0][COLS-1:0]; 
-        
     reg [LOG2_ROWS:0] idx_i;
     reg [LOG2_COLS:0] idx_j;   
-    
-    reg [DIGIT_DIM-1:0] w;      
-    reg [DIGIT_DIM-1:0] x;  
     
     wire [DIGIT_DIM-1:0] distance_out [MAX_NODE_SIZE-1:0];
     wire [MAX_NODE_SIZE-1:0] distance_done;
@@ -327,12 +320,8 @@ module gsom
     reg distance_reset=0;
     reg [DIGIT_DIM*DIM-1:0] distance_X=0;
     
-//    node_list[node_count] = random_weights[node_count]; // Initialize random weight
-//            node_coords
-            
     genvar euc_i;
     generate
-               
         for(euc_i=0; euc_i<=MAX_NODE_SIZE-1; euc_i=euc_i+1) begin
             gsom_euclidean_distance euclidean_distance(
                 .clk(clk),
@@ -409,7 +398,7 @@ module gsom
                 end 
                 
                 i=i+1;
-                if (j>=node_count) begin
+                if (i>=node_count) begin
                     min_distance_en=0;
                     bmu_en=1;
                 end
@@ -467,6 +456,7 @@ module gsom
     reg update_reset=0;
     reg [DIGIT_DIM*DIM-1:0] update_in_1;
     reg [DIGIT_DIM*DIM-1:0] update_in_2;
+    reg [DIGIT_DIM-1:0]  update_learning_rate;
     wire [DIGIT_DIM*DIM-1:0] update_out;
     wire [DIGIT_DIM*DIM-1:0] update_error_out;
     wire [DIM-1:0] update_done;
@@ -489,7 +479,7 @@ module gsom
                 .reset(update_reset),
                 .weight(update_in_1[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .train_row(update_in_2[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
-                .alpha(alpha),
+                .alpha(update_learning_rate),
                 .updated_weight(update_out[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .error(update_error_out[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .is_done(update_done[update_i-1])
@@ -516,8 +506,9 @@ module gsom
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
             if (man_dist == 0) begin
-                update_in_1 = node_list[rmu_i];
+                update_in_1 = node_list[rmu];
                 update_in_2 = trainX[t1];
+                update_learning_rate = current_learning_rate;
                 update_en=1; 
                 update_reset=0;             
             end else if (man_dist <= radius) begin
@@ -534,13 +525,113 @@ module gsom
         end
     end
     
+    reg signed [LOG2_NODE_SIZE:0] leftx, lefty, rightx, righty, upx, upy, bottomx, bottomy;
+    reg signed [LOG2_NODE_SIZE:0] leftx_abs, lefty_abs, rightx_abs, righty_abs, upx_abs, upy_abs, bottomx_abs, bottomy_abs;
+    
+    reg [LOG2_NODE_SIZE:0] x, y;
+    reg [LOG2_NODE_SIZE:0] abs_x, abs_y;
+    reg [1:0] x_y_signs;
+    reg is_exist=0;
+    reg check_in_map_done=0;
+    
+    
+    always @(posedge clk) begin
+        if (check_in_map_en) begin
+            check_in_map_done=0;
+            abs_x = x>0 ? x : -x;
+            abs_y = y>0 ? y : -y;
+            
+            x_y_signs[0] = x>0 ? 0 : 1;
+            x_y_signs[1] = y>0 ? 0 : 1;
+            
+            if ((map[abs_x][abs_y][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==0)) begin
+                is_exist = 1;
+            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==1)) begin
+                is_exist = 1;
+            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==1) && (x_y_signs[1]==0)) begin
+                is_exist = 1;
+            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==1) && (x_y_signs[1]==1)) begin
+                is_exist = 1;
+            end else begin
+                is_exist = 0;
+            end
+            check_in_map_en = 0;
+            check_in_map_done = 1;
+        end
+    end
+    
+    reg [3:0] spreadable;
+    reg [1:0] is_spreadable_finished_idx;
+    
+
+    always @(posedge clk) begin
+        if (adjust_weights_en) begin
+            comp_reset = 0;
+            comp_en = 1;
+            comp_in_1 = node_errors[rmu];
+            comp_in_2 = growth_threshold;
+            
+            adjust_weights_en = 0;
+        end
+        if (comp_done) begin
+            comp_reset = 1;
+            comp_en = 0;
+            if (comp_out == 1) begin
+                leftx = bmu_x-1;    lefty = bmu_y;
+                rightx = bmu_x+1;   righty = bmu_y;
+                upx = bmu_x;        upy = bmu_y+1;
+                bottomx = bmu_x;    bottomy = bmu_y-1;
+                
+                x = upx; y=upy;                
+                check_in_map_en = 1;
+                is_spreadable_finished_idx = 0;                                
+            
+            end else begin
+                smoothing_en=1;
+            end
+        end
+        
+        if (is_spreadable_finished_idx == 3) begin // checked all neighbours exist
+            if (spreadable == 4'b1) begin
+                spread_weighs_en=1;
+            end else begin
+                grow_nodes_en=1;
+            end
+            is_spreadable_finished_idx = 0;            
+        end
+        
+        if (check_in_map_done) begin
+            spreadable[is_spreadable_finished_idx] = is_exist;
+            
+            check_in_map_en = 1;
+            check_in_map_done = 0;
+
+            if (is_spreadable_finished_idx==0) begin
+                x = rightx; y=righty;
+                is_spreadable_finished_idx = is_spreadable_finished_idx+1;
+                
+            end else if (is_spreadable_finished_idx == 1) begin
+                x = bottomx; y=bottomy;
+                is_spreadable_finished_idx = is_spreadable_finished_idx+1;
+                
+            end else if (is_spreadable_finished_idx == 2) begin
+                x = leftx; y=lefty;
+                is_spreadable_finished_idx = is_spreadable_finished_idx+1;
+                
+            end else begin
+                check_in_map_en = 0;
+            end 
+        end
+    end
+    
     always @(posedge clk) begin
         if ((update_done == {DIM{1'b1}}) || (update_neighbour_done == {DIM{1'b1}}) || not_man_dist_en) begin
             if (update_done == {DIM{1'b1}}) begin
-                node_list[rmu_i] = update_out;
+                node_list[rmu] = update_out;
                 update_en=0;
                 update_reset=1;
                 node_errors[rmu] = node_errors[rmu] + update_error_out;
+                adjust_weights_en = 1;
             end 
             
             if (update_neighbour_done == {DIM{1'b1}}) begin
@@ -575,17 +666,17 @@ module gsom
                 i_j_signs[0] = bmu_i>0 ? 0 : 1;
                 i_j_signs[1] = bmu_j>0 ? 0 : 1;
                 
-                if ((node_coords_valid[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==0)) begin
-                    rmu_i = node_coords_valid[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
+                if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==0)) begin
+                    rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
                     nb_search_en = 1;
-                end else if ((node_coords_valid[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==1)) begin
-                    rmu_i = node_coords_valid[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE];
+                end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==1)) begin
+                    rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE];
                     nb_search_en = 1;
-                end else if ((node_coords_valid[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==0)) begin
-                    rmu_i = node_coords_valid[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE];
+                end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==0)) begin
+                    rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE];
                     nb_search_en = 1;
-                end else if ((node_coords_valid[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==1)) begin
-                    rmu_i = node_coords_valid[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE];
+                end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==1)) begin
+                    rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE];
                     nb_search_en = 1;
                 end else begin
                     nb_search_en = 0;
