@@ -32,7 +32,7 @@ wire [DIGIT_DIM*DIM-1:0] dist_sqr_done;
 wire [DIM-1:0] dist_sqr_is_done;
 
 
-////////////////////Get all done to one variable///////////////////////
+//////////////////// Get all done to one variable ///////////////////////
 //genvar k;
 //generate
 //    for (k=1; k<=DIM; k=k+1) begin

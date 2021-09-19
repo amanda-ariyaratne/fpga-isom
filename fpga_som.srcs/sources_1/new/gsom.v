@@ -62,7 +62,7 @@ module gsom
     reg [DIGIT_DIM*DIM-1:0] testX [TEST_ROWS-1:0];
     reg [LOG2_NUM_CLASSES-1:0] trainY [TRAIN_ROWS-1:0];
     reg [LOG2_NUM_CLASSES-1:0] testY [TEST_ROWS-1:0];
-    reg [LOG2_DIM*DIM-1:0] random_weights [INIT_ROWS-1:0];
+    reg [DIGIT_DIM*DIM-1:0] random_weights [INIT_ROWS + INIT_COLS - 1:0];
     
     initial begin
         $readmemb("som_train_x.mem", trainX);
@@ -83,8 +83,6 @@ module gsom
     initial begin
         $readmemb("gsom_weights.mem", random_weights);
     end
-    
-    
     
     reg [LOG2_NODE_SIZE-1:0] node_count = 0;
     reg [DIGIT_DIM-1:0] node_count_ieee754 = 32'h00000000;
