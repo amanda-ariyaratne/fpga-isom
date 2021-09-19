@@ -2,14 +2,14 @@
 # Webtalk v2020.2 (64-bit)
 # SW Build 3064766 on Wed Nov 18 09:12:47 MST 2020
 # IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
-# Start of session at: Fri Sep 17 06:43:26 2021
-# Process ID: 5711
-# Current directory: /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim
-# Command line: wbtcv -mode batch -source /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/csom_tb_behav/webtalk/xsim_webtalk.tcl -notrace
-# Log file: /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/webtalk.log
-# Journal file: /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/webtalk.jou
+# Start of session at: Sun Sep 19 12:11:36 2021
+# Process ID: 9286
+# Current directory: /home/aari/Projects/Vivado/fpga-som/fpga_som.sim/sim_1/behav/xsim
+# Command line: wbtcv -mode batch -source /home/aari/Projects/Vivado/fpga-som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/csom_tb_behav/webtalk/xsim_webtalk.tcl -notrace
+# Log file: /home/aari/Projects/Vivado/fpga-som/fpga_som.sim/sim_1/behav/xsim/webtalk.log
+# Journal file: /home/aari/Projects/Vivado/fpga-som/fpga_som.sim/sim_1/behav/xsim/webtalk.jou
 #-----------------------------------------------------------
-source /home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/csom_tb_behav/webtalk/xsim_webtalk.tcl -notrace
-INFO: [Common 17-186] '/home/aari/Projects/Vivado/fpga_som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/csom_tb_behav/webtalk/usage_statistics_ext_xsim.xml' has been successfully sent to Xilinx on Fri Sep 17 06:43:35 2021. For additional details about this file, please refer to the WebTalk help file at /opt/Xilinx/Vivado/2020.2/doc/webtalk_introduction.html.
-webtalk_transmit: Time (s): cpu = 00:00:01 ; elapsed = 00:00:09 . Memory (MB): peak = 416.297 ; gain = 0.000 ; free physical = 2004 ; free virtual = 20937
-INFO: [Common 17-206] Exiting Webtalk at Fri Sep 17 06:43:35 2021...
+source /home/aari/Projects/Vivado/fpga-som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/csom_tb_behav/webtalk/xsim_webtalk.tcl -notrace
+INFO: [Common 17-186] '/home/aari/Projects/Vivado/fpga-som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/csom_tb_behav/webtalk/usage_statistics_ext_xsim.xml' has been successfully sent to Xilinx on Sun Sep 19 12:11:42 2021. For additional details about this file, please refer to the WebTalk help file at /opt/Xilinx/Vivado/2020.2/doc/webtalk_introduction.html.
+webtalk_transmit: Time (s): cpu = 00:00:01 ; elapsed = 00:00:06 . Memory (MB): peak = 416.297 ; gain = 0.000 ; free physical = 139 ; free virtual = 19936
+INFO: [Common 17-206] Exiting Webtalk at Sun Sep 19 12:11:42 2021...

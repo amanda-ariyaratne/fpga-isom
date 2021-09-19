@@ -123,6 +123,7 @@ module gsom
     );
     
     always @(posedge clk) begin
+    
         if (init_gsom) begin
             map[1][1] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
