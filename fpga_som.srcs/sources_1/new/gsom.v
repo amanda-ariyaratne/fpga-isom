@@ -128,9 +128,9 @@ module gsom
     
     reg mul_en = 0;
     reg mul_reset = 0;
-    reg mul_num1;
-    reg mul_num2;
-    wire mul_num_out;
+    reg [DIGIT_DIM-1:0] mul_num1;
+    reg [DIGIT_DIM-1:0] mul_num2;
+    wire [DIGIT_DIM-1:0] mul_num_out;
     wire mul_is_done;    
     
     fpa_multiplier multiplier(
@@ -159,7 +159,6 @@ module gsom
             end
             init_arrays = 0;
             init_gsom = 1;
-            $finish;
         end
     end
     
@@ -331,7 +330,7 @@ module gsom
                 .weight(node_list[euc_i]),
                 .trainX(distance_X),
                 .node_count(node_count),
-                .index(euc_i),
+                .index(euc_i[LOG2_NODE_SIZE-1:0]),
                 .num_out(distance_out[euc_i]),
                 .is_done(distance_done[euc_i])
             );

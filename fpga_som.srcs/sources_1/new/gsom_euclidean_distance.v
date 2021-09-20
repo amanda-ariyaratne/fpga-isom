@@ -3,7 +3,8 @@
 module gsom_euclidean_distance
 #(
     parameter DIM=4,
-    parameter DIGIT_DIM=32
+    parameter DIGIT_DIM=32,
+    parameter LOG2_NODE_SIZE=14
 )
 (
     input wire clk,
@@ -11,8 +12,8 @@ module gsom_euclidean_distance
     input wire reset,
     input wire [DIGIT_DIM*DIM-1:0] weight,
     input wire [DIGIT_DIM*DIM-1:0] trainX,
-    input wire node_count,
-    input wire index,
+    input wire [LOG2_NODE_SIZE-1:0] node_count,
+    input wire [LOG2_NODE_SIZE-1:0] index,
     output wire [DIGIT_DIM-1:0] num_out,
     output wire is_done
 );
