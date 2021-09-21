@@ -88,7 +88,7 @@ module gsom
     reg [DIGIT_DIM-1:0] node_count_ieee754 = 32'h00000000;
     reg [(DIM*DIGIT_DIM)-1:0] node_list [MAX_NODE_SIZE-1:0];
     reg [LOG2_NODE_SIZE-1:0] node_coords [MAX_NODE_SIZE-1:0][1:0];
-    reg signed [LOG2_NODE_SIZE*4-1:0] map [MAX_ROWS-1:0][MAX_COLS-1:0];
+    reg signed [((LOG2_NODE_SIZE+1)*4)-1:0] map [MAX_ROWS-1:0][MAX_COLS-1:0];
     reg [DIGIT_DIM-1:0] node_errors [MAX_NODE_SIZE-1:0];
     reg [DIGIT_DIM-1:0] growth_threshold;
     reg signed [3:0] radius;
@@ -128,9 +128,9 @@ module gsom
     
     reg mul_en = 0;
     reg mul_reset = 0;
-    reg mul_num1;
-    reg mul_num2;
-    wire mul_num_out;
+    reg [DIGIT_DIM-1:0] mul_num1;
+    reg [DIGIT_DIM-1:0] mul_num2;
+    wire [DIGIT_DIM-1:0] mul_num_out;
     wire mul_is_done;    
     
     fpa_multiplier multiplier(
@@ -143,21 +143,22 @@ module gsom
         .is_done(mul_is_done)
     );
     
+
+    reg [LOG2_DIM:0] map_k = 0;
+    reg [LOG2_NODE_SIZE:0] node_iter = 0;
     always @(posedge clk) begin
         if (init_arrays) begin
-            for (i=0; i<MAX_ROWS;i=i+1) begin
-                for (j=0; j<MAX_COLS;j=j+1) begin
-                    for (k=LOG2_NODE_SIZE; k<=LOG2_NODE_SIZE*4;k=k+LOG2_NODE_SIZE) begin
-                        map[i][j][k-1 -:LOG2_NODE_SIZE] <= -1;
-                    end
+            for (i = 0; i < MAX_ROWS; i = i + 1) begin
+                for (j = 0; j < MAX_COLS; j = j + 1) begin
+                    map[i][j] = { (LOG2_NODE_SIZE+1)*4{1'b1} };
                 end    
             end
             
-            for (i=0; i<MAX_NODE_SIZE;i=i+1) begin
-                node_errors[i] <= 0;  
+            for (node_iter = 0; node_iter < MAX_NODE_SIZE; node_iter = node_iter + 1) begin
+                node_errors[node_iter] = 0;  
             end
-            init_arrays <= 0;
-            init_gsom <= 1;
+            init_arrays = 0;
+            init_gsom = 1;
         end
     end
     
@@ -239,7 +240,7 @@ module gsom
         .learning_rate(lr_out),
         .is_done(lr_is_done)
     );
-    
+
     always @(posedge clk) begin
         if (next_iteration_en) begin
             if (iteration < GROWING_ITERATIONS) begin
@@ -284,6 +285,7 @@ module gsom
             next_t1_en = 1;
         end
     end
+
     
 
     
@@ -317,7 +319,7 @@ module gsom
     reg distance_en=0;
     reg distance_reset=0;
     reg [DIGIT_DIM*DIM-1:0] distance_X=0;
-    
+
     genvar euc_i;
     generate
         for(euc_i=0; euc_i<=MAX_NODE_SIZE-1; euc_i=euc_i+1) begin
@@ -328,7 +330,7 @@ module gsom
                 .weight(node_list[euc_i]),
                 .trainX(distance_X),
                 .node_count(node_count),
-                .index(euc_i),
+                .index(euc_i[LOG2_NODE_SIZE-1:0]),
                 .num_out(distance_out[euc_i]),
                 .is_done(distance_done[euc_i])
             );

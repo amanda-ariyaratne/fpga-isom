@@ -36,7 +36,7 @@ reg [31:0] mul_in_1;
 reg [31:0] mul_in_2;
 wire [31:0] mul_out;
 reg mul_reset;
-wire [1:0] mul_done;
+wire mul_done;
 
 reg en_add=0;
 reg en_mul=0;
