@@ -67,15 +67,16 @@ reg [DIGIT_DIM-1:0] out;
 reg mul_1_en = 0;
 reg mul_2_en = 0;
 reg mul_3_en = 0;
-always @(posedge reset) begin
+always @(posedge clk) begin
+
     if (en && init) begin
         
+        // add node_count/8 and 2
         add_num1 = 32'h40000000; // 2
         ///****** 2^(x-3) X 1.y ******///
         add_num2[31] = 0; // sign bit
-        add_num2[30:23] = node_count[30:23] - 3; // exponent - 3
+        add_num2[30:23] = node_count[30:23] - 3; // exponent - 3 --> divide node_count by 8
         add_num2[22:0] = node_count[22:0]; // mantissa is the same
-        
         add_en = 1;
         add_reset = 0;
         init = 0; 
@@ -85,10 +86,9 @@ always @(posedge reset) begin
     if (add_is_done && mul_1_en) begin
         add_en = 0;
         add_reset = 1;
-        
-        add_num1 = 32'h3F800000;
+        add_num1 = 32'h3F800000;    // 1
         add_num2[31] = 1; // indicate subtraction
-        add_num2[30:23] = R[30:23] - add_num_out;
+        add_num2[30:23] = R[30:23] - add_num_out;   // divide R by 2^add_num_out
         add_num2[22:0] = R[22:0];
         add_en = 1;
         add_reset = 0;

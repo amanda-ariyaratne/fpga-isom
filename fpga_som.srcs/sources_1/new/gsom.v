@@ -105,8 +105,11 @@ module gsom
     reg init_gsom = 0;
     reg init_variables = 0;
     reg fit_en = 0;
+    reg growing_iter_en = 0;
+    reg smoothing_iter_en = 0;
     reg get_LR_en = 0;
     reg grow_en = 0;
+    reg smooth_en = 0;
     reg adjust_weights_en=0;
     reg check_in_map_en = 0;
     reg smoothing_en=0;
@@ -148,7 +151,6 @@ module gsom
     reg [LOG2_NODE_SIZE:0] node_iter = 0;
     always @(posedge clk) begin
         if (init_arrays) begin
-            $display("init_arrays");
             for (i = 0; i < MAX_ROWS; i = i + 1) begin
                 for (j = 0; j < MAX_COLS; j = j + 1) begin
                     map[i][j] = { (LOG2_NODE_SIZE+1)*4{1'b1} }; // initialize all cells to -1
@@ -165,7 +167,6 @@ module gsom
     
     always @(posedge clk) begin
         if (init_gsom) begin
-            $display("init_gsom");
             map[1][1][LOG2_NODE_SIZE:0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 1;
@@ -217,30 +218,29 @@ module gsom
         end
     end
     
-//    always @(posedge clk) begin
-//        if (fit_en && growing_iter_en) begin
-//            current_learning_rate = learning_rate;
-//            iteration = -1;            
-//            next_iteration_en = 1;
-//            fit_en = 0;
-//        end
+    always @(posedge clk) begin
+        if (fit_en && growing_iter_en) begin
+            current_learning_rate = learning_rate;
+            iteration = -1;            
+            next_iteration_en = 1;
+            fit_en = 0;
+        end
         
-//        if (fit_en && smoothing_iter_en) begin
-//            mul_num1 = learning_rate;
-//            mul_num2 = smooth_learning_factor;
-//            mul_en = 1;
-//            mul_reset = 0;
-//            if (mul_is_done) begin
-//                current_learning_rate = mul_num_out;
-//                mul_en = 0;
-//                mul_reset = 1;
-//                iteration = -1;            
-//                next_iteration_en = 1;
-//                fit_en = 0;
-//            end
-//        end
-        
-//    end
+        if (fit_en && smoothing_iter_en) begin
+            mul_num1 = learning_rate;
+            mul_num2 = smooth_learning_factor;
+            mul_en = 1;
+            mul_reset = 0;
+            if (mul_is_done) begin
+                current_learning_rate = mul_num_out;
+                mul_en = 0;
+                mul_reset = 1;
+                iteration = -1;            
+                next_iteration_en = 1;
+                fit_en = 0;
+            end
+        end
+    end
     
     reg lr_en = 0;
     reg lr_reset = 0;
@@ -260,7 +260,7 @@ module gsom
         if (next_iteration_en) begin
             if (iteration < GROWING_ITERATIONS) begin
                 iteration = iteration + 1;
-                $display("iteration", iteration);
+                
                 // neighbourhood                
                 if (iteration <= delta_growing_iter) begin
                     radius = 4;
@@ -275,7 +275,6 @@ module gsom
                     get_LR_en = 1;
                 end
                 if (iteration == 0) begin
-                    $display("current iteration is 0");
                     current_learning_rate = learning_rate;
                     grow_en = 1;
                 end
@@ -283,80 +282,75 @@ module gsom
                 next_iteration_en = 0;
             end else begin
                 iteration = -1;   // reset iteration count
-                $finish;
             end
         end
  
         
         // calculate learning rate
         if (get_LR_en) begin
-            $display("enable LR");
-            lr_en = 1;
             lr_reset = 0;
+            lr_en = 1;
             get_LR_en = 0;
         end        
         if (lr_is_done) begin
-            $display("LR is sone", lr_out);
             lr_en = 0;
             lr_reset = 1;
             current_learning_rate = lr_out;
             grow_en = 1;
         end
         
-//        // grow network
-//        if (grow_en) begin
-//            grow_en = 0;
-//            t1 = -1;
+        // grow network
+        if (grow_en) begin
+            grow_en = 0;
             next_t1_en = 1;
             next_iteration_en = 1;      // ADDED
         end
     end
 
     
-//    always @(posedge clk) begin
-//        if (next_iteration_en && smoothing_iter_en) begin
-//            if (iteration < SMOOTHING_ITERATIONS) begin
-//                iteration = iteration + 1;
-//                // neighbourhood                
-//                if (iteration <= delta_smoothing_iter) begin
-//                    radius = 4;
-//                end else if ((iteration <= delta_smoothing_iter*2) && (iteration > delta_smoothing_iter*1)) begin
-//                    radius = 2;
-//                end else if ((iteration <= delta_smoothing_iter*3) && (iteration > delta_smoothing_iter*2)) begin
-//                    radius = 1;
-//                end 
+    always @(posedge clk) begin
+        if (next_iteration_en && smoothing_iter_en) begin
+            if (iteration < SMOOTHING_ITERATIONS) begin
+                iteration = iteration + 1;
+                // neighbourhood                
+                if (iteration <= delta_smoothing_iter) begin
+                    radius = 4;
+                end else if ((iteration <= delta_smoothing_iter*2) && (iteration > delta_smoothing_iter*1)) begin
+                    radius = 2;
+                end else if ((iteration <= delta_smoothing_iter*3) && (iteration > delta_smoothing_iter*2)) begin
+                    radius = 1;
+                end 
                 
-//                // learning rate
-//                if (iteration != 0)
-//                    get_LR_en = 1;
+                // learning rate
+                if (iteration != 0)
+                    get_LR_en = 1;
                 
-//                next_iteration_en = 0;
-//            end else begin
-//                iteration = -1;   // reset iteration count
-//                $finish;
-//            end
-//        end       
+                next_iteration_en = 0;
+            end else begin
+                iteration = -1;   // reset iteration count
+                $finish;
+            end
+        end       
         
-//        // calculate learning rate
-//        if (get_LR_en && smoothing_iter_en) begin
-//            lr_en = 1;
-//            lr_reset = 0;
-//            get_LR_en = 0;
-//        end        
-//        if (lr_is_done && smoothing_iter_en) begin
-//            lr_en = 0;
-//            lr_reset = 1;
-//            current_learning_rate = lr_out;
-//            smooth_en = 1;
-//        end
+        // calculate learning rate
+        if (get_LR_en && smoothing_iter_en) begin
+            lr_en = 1;
+            lr_reset = 0;
+            get_LR_en = 0;
+        end        
+        if (lr_is_done && smoothing_iter_en) begin
+            lr_en = 0;
+            lr_reset = 1;
+            current_learning_rate = lr_out;
+            smooth_en = 1;
+        end
         
-//        // grow network
-//        if (smooth_en) begin
-//            smooth_en = 0;
-//            t1 = -1;
-//            next_t1_en = 1;
-//        end
-//    end   
+        if (smooth_en) begin
+            smooth_en = 0;
+            t1 = -1;
+            next_t1_en = 1;
+        end
+    end   
 
     
 //    always @(posedge clk) begin
