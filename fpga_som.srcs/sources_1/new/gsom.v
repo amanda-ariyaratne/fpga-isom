@@ -33,13 +33,13 @@ module gsom
         
         // model parameters
         parameter spread_factor = 32'h3F000000, //0.5
-        parameter spread_factor_logval = 32'hBE9A209B, // BE9A209B = -0.30102999566
+        parameter spread_factor_logval = 32'hBF317218, // BE9A209B = -0.30102999566
         
         parameter dimensions_ieee754 = 32'h40800000, // 4
         parameter initial_learning_rate=32'h3E99999A, // 0.3
         parameter smooth_learning_factor= 32'h3F4CCCCD, //0.8
         parameter max_radius=4,
-        parameter FD=32'h3F8CCCCD, //0.1
+        parameter FD=32'h3DCCCCCD, //0.1
         parameter r=32'h40733333, //3.8
         parameter alpha=32'h3F666666, //0.9
         parameter initial_node_size=30000
@@ -54,8 +54,8 @@ module gsom
     localparam delta_growing_iter = 34;
     localparam delta_smoothing_iter = 17;
     
-    reg signed [LOG2_ROWS:0] i = 0;
-    reg signed [LOG2_COLS:0] j = 0;
+    reg signed [LOG2_NODE_SIZE:0] i = 0;
+    reg signed [LOG2_NODE_SIZE:0] j = 0;
     reg signed [LOG2_DIM:0] k = 0;
     
     reg [DIGIT_DIM*DIM-1:0] trainX [TRAIN_ROWS-1:0];    
@@ -112,7 +112,6 @@ module gsom
     reg smoothing_en=0;
     reg spread_weighs_en=0;
     reg grow_nodes_en=0;
-    reg [3:0] grow_done;
     
     reg dist_enable = 0;
     reg init_neigh_search_en=0;  
@@ -126,11 +125,6 @@ module gsom
     
     reg next_iteration_en = 0;
     reg next_t1_en = 0;
-    reg growing_iter_en=0;
-    reg smoothing_iter_en=0;
-    reg smooth_en=0;
-    
-    reg not_man_dist_en = 0;
     
     reg mul_en = 0;
     reg mul_reset = 0;
@@ -172,33 +166,29 @@ module gsom
     always @(posedge clk) begin
         if (init_gsom) begin
             $display("init_gsom");
-            map[1][1] = node_count;
+            map[1][1][LOG2_NODE_SIZE:0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 1;
             node_coords[node_count][1] = 1;
             node_count = node_count + 1;            
-            map[1][1][LOG2_NODE_SIZE:0] = node_count;
             
-            map[1][0] = node_count;
+            map[1][0][LOG2_NODE_SIZE:0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 1;
             node_coords[node_count][1] = 0;
             node_count = node_count + 1;
-            map[1][0][LOG2_NODE_SIZE:0] = node_count;
             
-            map[0][1] = node_count;
+            map[0][1][LOG2_NODE_SIZE:0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 0;
             node_coords[node_count][1] = 1;
             node_count = node_count + 1;
-            map[0][1][LOG2_NODE_SIZE:0] = node_count;
             
-            map[0][0] = node_count;
+            map[0][0][LOG2_NODE_SIZE:0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 0;
             node_coords[node_count][1] = 0;
             node_count = node_count + 1;
-            map[0][0][LOG2_NODE_SIZE:0] = node_count;
             
             node_count_ieee754 = 32'h40800000; // 4
             
@@ -211,7 +201,7 @@ module gsom
             learning_rate = initial_learning_rate;
             
             // growth threshold            
-            mul_num1 = dimensions_ieee754;
+            mul_num1 = {1'b1, dimensions_ieee754[DIGIT_DIM-2:0]};
             mul_num2 = spread_factor_logval;
             mul_en = 1;
             mul_reset = 0;
