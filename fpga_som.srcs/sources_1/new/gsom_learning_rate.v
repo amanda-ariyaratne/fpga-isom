@@ -1,9 +1,17 @@
 `timescale 1ns / 1ps
 
+
+// LR(t +1) = alpha * psi(n) * LR(t)
+// n = node count
+
+// psi(n) = 1 -     R
+//              -----------
+//              2^(n/8 + 2)
+
 module gsom_learning_rate
 #(
-    parameter R=32'h40733333,
-    parameter DIGIT_DIM=32
+    parameter R = 32'h40733333,
+    parameter DIGIT_DIM = 32
 )
 (
     input wire clk,
