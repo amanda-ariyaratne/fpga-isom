@@ -148,6 +148,7 @@ module gsom
     reg [LOG2_NODE_SIZE:0] node_iter = 0;
     always @(posedge clk) begin
         if (init_arrays) begin
+            $display("init_arrays");
             for (i = 0; i < MAX_ROWS; i = i + 1) begin
                 for (j = 0; j < MAX_COLS; j = j + 1) begin
                     map[i][j] = { (LOG2_NODE_SIZE+1)*4{1'b1} }; // initialize all cells to -1
@@ -164,6 +165,7 @@ module gsom
     
     always @(posedge clk) begin
         if (init_gsom) begin
+            $display("init_gsom");
             map[1][1][LOG2_NODE_SIZE:0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 1;
@@ -203,26 +205,42 @@ module gsom
             mul_en = 1;
             mul_reset = 0;
             
-            init_variables = 0;
-        end
-        
-        if (mul_is_done) begin
-            growth_threshold = mul_num_out;
-            growth_threshold[DIGIT_DIM-1] = 0; //make the value positive
-            mul_en = 0;
-            mul_reset = 1;
-            fit_en = 1;
+            if (mul_is_done) begin
+                growth_threshold = mul_num_out;
+                growth_threshold[DIGIT_DIM-1] = 0; //make the value positive
+                mul_en = 0;
+                mul_reset = 1;
+                fit_en = 1;
+                growing_iter_en = 1;
+                init_variables = 0;
+            end
         end
     end
     
-    always @(posedge clk) begin
-        if (fit_en) begin
-            current_learning_rate = learning_rate;
-            iteration = -1;            
-            next_iteration_en = 1;
-            fit_en = 0;
-        end
-    end
+//    always @(posedge clk) begin
+//        if (fit_en && growing_iter_en) begin
+//            current_learning_rate = learning_rate;
+//            iteration = -1;            
+//            next_iteration_en = 1;
+//            fit_en = 0;
+//        end
+        
+//        if (fit_en && smoothing_iter_en) begin
+//            mul_num1 = learning_rate;
+//            mul_num2 = smooth_learning_factor;
+//            mul_en = 1;
+//            mul_reset = 0;
+//            if (mul_is_done) begin
+//                current_learning_rate = mul_num_out;
+//                mul_en = 0;
+//                mul_reset = 1;
+//                iteration = -1;            
+//                next_iteration_en = 1;
+//                fit_en = 0;
+//            end
+//        end
+        
+//    end
     
     reg lr_en = 0;
     reg lr_reset = 0;
@@ -285,9 +303,9 @@ module gsom
             grow_en = 1;
         end
         
-        // grow network
-        if (grow_en) begin
-            grow_en = 0;
+//        // grow network
+//        if (grow_en) begin
+//            grow_en = 0;
 //            t1 = -1;
             next_t1_en = 1;
             next_iteration_en = 1;      // ADDED
@@ -295,6 +313,50 @@ module gsom
     end
 
     
+//    always @(posedge clk) begin
+//        if (next_iteration_en && smoothing_iter_en) begin
+//            if (iteration < SMOOTHING_ITERATIONS) begin
+//                iteration = iteration + 1;
+//                // neighbourhood                
+//                if (iteration <= delta_smoothing_iter) begin
+//                    radius = 4;
+//                end else if ((iteration <= delta_smoothing_iter*2) && (iteration > delta_smoothing_iter*1)) begin
+//                    radius = 2;
+//                end else if ((iteration <= delta_smoothing_iter*3) && (iteration > delta_smoothing_iter*2)) begin
+//                    radius = 1;
+//                end 
+                
+//                // learning rate
+//                if (iteration != 0)
+//                    get_LR_en = 1;
+                
+//                next_iteration_en = 0;
+//            end else begin
+//                iteration = -1;   // reset iteration count
+//                $finish;
+//            end
+//        end       
+        
+//        // calculate learning rate
+//        if (get_LR_en && smoothing_iter_en) begin
+//            lr_en = 1;
+//            lr_reset = 0;
+//            get_LR_en = 0;
+//        end        
+//        if (lr_is_done && smoothing_iter_en) begin
+//            lr_en = 0;
+//            lr_reset = 1;
+//            current_learning_rate = lr_out;
+//            smooth_en = 1;
+//        end
+        
+//        // grow network
+//        if (smooth_en) begin
+//            smooth_en = 0;
+//            t1 = -1;
+//            next_t1_en = 1;
+//        end
+//    end   
 
     
 //    always @(posedge clk) begin
@@ -312,24 +374,22 @@ module gsom
 
     
 //    //////////////////******************************Find BMU******************************/////////////////////////////////
+//    reg [LOG2_DIM-1:0] iii = 0; 
     
 //    reg [DIGIT_DIM-1:0] min_distance;   
-//    reg [LOG2_NODE_SIZE:0] minimum_distance_indices [MAX_NODE_SIZE-1:0][1:0];
-//    reg [LOG2_NODE_SIZE:0] minimum_distance_1D_indices [MAX_NODE_SIZE:0];
-//    reg [LOG2_DIM-1:0] min_distance_next_index = 0;
-    
-//    reg [LOG2_ROWS:0] idx_i;
-//    reg [LOG2_COLS:0] idx_j;   
+//    reg signed [LOG2_ROWS:0] minimum_distance_indices [MAX_NODE_SIZE-1:0][1:0];
+//    reg [LOG2_NODE_SIZE-1:0] minimum_distance_1D_indices [MAX_NODE_SIZE:0];
+//    reg [LOG2_NODE_SIZE-1:0] min_distance_next_index = 0;
     
 //    wire [DIGIT_DIM-1:0] distance_out [MAX_NODE_SIZE-1:0];
 //    wire [MAX_NODE_SIZE-1:0] distance_done;
-//    reg distance_en = 0;
-//    reg distance_reset = 1;
-//    reg [DIGIT_DIM*DIM-1:0] distance_X = 0;
+//    reg distance_en=0;
+//    reg distance_reset=0;
+//    reg [DIGIT_DIM*DIM-1:0] distance_X=0;
 
 //    genvar euc_i;
 //    generate
-//        for(euc_i=0; euc_i <= MAX_NODE_SIZE-1; euc_i=euc_i+1) begin
+//        for(euc_i=0; euc_i<=MAX_NODE_SIZE-1; euc_i=euc_i+1) begin
 //            gsom_euclidean_distance euclidean_distance(
 //                .clk(clk),
 //                .en(distance_en),
@@ -349,7 +409,7 @@ module gsom
 //    wire [1:0] comp_out;
 //    wire comp_done;
 //    reg comp_en=0;
-//    reg comp_reset = 1;
+//    reg comp_reset=0;
     
 //    fpa_comparator get_min(
 //        .clk(clk),
@@ -363,9 +423,9 @@ module gsom
     
 //    always @(posedge clk) begin
 //        if (dist_enable) begin
-//            distance_X = trainX[t1];
-//            distance_reset = 0;
-//            distance_en = 1;
+//            distance_X=trainX[t1];
+//            distance_reset=0;
+//            distance_en=1;
             
 //            if (distance_done == {MAX_NODE_SIZE{1'b1}}) begin
 //                distance_en = 0;
@@ -413,15 +473,15 @@ module gsom
 //        end
 //    end
     
-//    reg [LOG2_NODE_SIZE:0] bmu [1:0];
-//    reg [LOG2_NODE_SIZE:0] rmu;
+//    reg signed [LOG2_ROWS:0] bmu [1:0];
+//    reg [LOG2_NODE_SIZE-1:0] rmu;
     
 //    always @(posedge clk) begin
 //        if (bmu_en && !test_mode) begin            
 //            bmu[1] = minimum_distance_indices[min_distance_next_index-1][1];
 //            bmu[0] = minimum_distance_indices[min_distance_next_index-1][0];
 //            rmu = minimum_distance_1D_indices[0];
-//            $display("rmu", rmu);
+            
 //            if (!classification_en)
 //                init_neigh_search_en = 1;
 //            else
@@ -432,18 +492,18 @@ module gsom
     
 //    //////////////////////************Start Neighbourhood search************//////////////////////////////////////////
     
-//    reg signed [LOG2_ROWS+1:0] bmu_i;
-//    reg signed [LOG2_COLS+1:0] bmu_j;
+//    reg signed [LOG2_ROWS:0] bmu_i;
+//    reg signed [LOG2_COLS:0] bmu_j;
     
-//    reg signed [LOG2_ROWS+1:0] abs_bmu_i;
-//    reg signed [LOG2_COLS+1:0] abs_bmu_j;
+//    reg signed [LOG2_ROWS:0] abs_bmu_i;
+//    reg signed [LOG2_COLS:0] abs_bmu_j;
     
 //    reg [1:0] i_j_signs;
     
-//    reg signed [LOG2_ROWS+1:0] rmu_i;
+//    reg signed [LOG2_NODE_COUNT:0] rmu_i;
     
-//    reg signed [LOG2_ROWS+1:0] bmu_x;
-//    reg signed [LOG2_COLS+1:0] bmu_y;
+//    reg signed [LOG2_ROWS:0] bmu_x;
+//    reg signed [LOG2_COLS:0] bmu_y;
 //    reg signed [DIGIT_DIM-1 :0] man_dist; /////////// not sure
     
    
@@ -506,8 +566,6 @@ module gsom
 //        end
 //    endgenerate
     
-//    reg not_man_dist_en = 0;
-
 //    always @(posedge clk) begin    
 //        if (nb_search_en && !update_en && !update_neighbour_en) begin  
 //            man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
@@ -532,102 +590,389 @@ module gsom
 //        end
 //    end
     
-//    reg signed [LOG2_NODE_SIZE:0] leftx, lefty, rightx, righty, upx, upy, bottomx, bottomy;
-//    reg signed [LOG2_NODE_SIZE:0] leftx_abs, lefty_abs, rightx_abs, righty_abs, upx_abs, upy_abs, bottomx_abs, bottomy_abs;
+//    reg signed [LOG2_ROWS:0] leftx, rightx, upx, bottomx;
+//    reg signed [LOG2_COLS:0] lefty, righty, upy, bottomy;
     
-//    reg [LOG2_NODE_SIZE:0] x, y;
-//    reg [LOG2_NODE_SIZE:0] abs_x, abs_y;
-//    reg [1:0] x_y_signs;
-//    reg is_exist=0;
-//    reg check_in_map_done=0;
-    
-    
-//    always @(posedge clk) begin
-//        if (check_in_map_en) begin
-//            check_in_map_done=0;
-//            abs_x = x>0 ? x : -x;
-//            abs_y = y>0 ? y : -y;
+//    function signed [LOG2_NODE_SIZE:0] is_in_map;
+//        input signed [LOG2_ROWS:0] x;
+//        input signed [LOG2_COLS:0] y;
+//        reg [LOG2_ROWS-1:0] abs_x;
+//        reg [LOG2_COLS-1:0] abs_y;
+//        reg [1:0] x_y_signs;
+//        begin
+//            abs_x = x[LOG2_ROWS-1:0];
+//            abs_y = y[LOG2_COLS-1:0];
             
-//            x_y_signs[0] = x>0 ? 0 : 1;
-//            x_y_signs[1] = y>0 ? 0 : 1;
+//            x_y_signs[0] = x[LOG2_ROWS];
+//            x_y_signs[1] = y[LOG2_COLS];
             
-//            if ((map[abs_x][abs_y][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==0)) begin
-//                is_exist = 1;
-//            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==1)) begin
-//                is_exist = 1;
-//            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==1) && (x_y_signs[1]==0)) begin
-//                is_exist = 1;
+//            if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*1-1 -:(LOG2_NODE_SIZE+1)] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==0)) begin
+//                is_in_map = map[abs_x][abs_y][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
+                
+//            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==1)) begin
+//                is_in_map = map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)];
+                
+//            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)] != -1) && (x_y_signs[0]==1) && (x_y_signs[1]==0)) begin
+//                is_in_map = map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)];
+                
 //            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==1) && (x_y_signs[1]==1)) begin
-//                is_exist = 1;
+//                is_in_map = map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*4-1 -:(LOG2_NODE_SIZE+1)];
+                
 //            end else begin
-//                is_exist = 0;
+//                is_in_map = -1;
 //            end
-//            check_in_map_en = 0;
-//            check_in_map_done = 1;
 //        end
-//    end
+//    endfunction
+    
+//    function insert_new_node;
+//        input signed [LOG2_ROWS:0] x;
+//        input signed [LOG2_COLS:0] y;
+//        input [DIGIT_DIM-1:0] weights;
+//        reg [LOG2_ROWS-1:0] abs_x;
+//        reg [LOG2_COLS-1:0] abs_y;
+//        reg [1:0] x_y_signs;
+        
+//        begin
+//            abs_x = x[LOG2_ROWS-1:0];
+//            abs_y = y[LOG2_COLS-1:0];
+            
+//            x_y_signs[0] = x[LOG2_ROWS];
+//            x_y_signs[1] = y[LOG2_COLS];
+            
+//            map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*(x_y_signs+1)-1 -:(LOG2_NODE_SIZE+1)] = node_count;
+//            node_list[node_count] = weights;
+//            node_coords[node_count][0] = x;
+//            node_coords[node_count][1] = y;
+//            node_count = node_count + 1;    
+//            insert_new_node = 1;       
+//        end
+//    endfunction
     
 //    reg [3:0] spreadable;
-//    reg [1:0] is_spreadable_finished_idx;
-    
+//    reg [LOG2_NODE_SIZE-1:0] spreadable_idx [3:0];
 
+//    reg update_error_en = 0;
+//    reg update_error_reset = 0;
+//    wire [DIGIT_DIM-1:0] updated_error [3:0];
+//    wire [3:0] update_error_done;    
+    
+//    genvar error_i;
+//    generate 
+//        for(error_i=0;error_i<4;error_i=error_i+1) begin
+//            fpa_multiplier update_error(
+//                .clk(clk),
+//                .en(update_error_en),
+//                .reset(update_error_reset),
+//                .num1(node_errors[spreadable_idx[error_i]]),
+//                .num2(fd),
+//                .num_out(updated_error[error_i]),
+//                .is_done(update_error_done[error_i])
+//            );
+//        end
+//    endgenerate
+    
 //    always @(posedge clk) begin
 //        if (adjust_weights_en) begin
 //            comp_reset = 0;
 //            comp_en = 1;
 //            comp_in_1 = node_errors[rmu];
 //            comp_in_2 = growth_threshold;
-            
-//            adjust_weights_en = 0;
-//        end
-//        if (comp_done) begin
-//            comp_reset = 1;
-//            comp_en = 0;
-//            if (comp_out == 1) begin
-//                leftx = bmu_x-1;    lefty = bmu_y;
-//                rightx = bmu_x+1;   righty = bmu_y;
-//                upx = bmu_x;        upy = bmu_y+1;
-//                bottomx = bmu_x;    bottomy = bmu_y-1;
-                
-//                x = upx; y=upy;                
-//                check_in_map_en = 1;
-//                is_spreadable_finished_idx = 0;                                
-            
-//            end else begin
-//                smoothing_en=1;
+        
+//            if (comp_done) begin
+//                comp_reset = 1;
+//                comp_en = 0;
+//                if (comp_out == 1) begin
+//                    leftx = bmu_x-1;    lefty = bmu_y;
+//                    rightx = bmu_x+1;   righty = bmu_y;
+//                    upx = bmu_x;        upy = bmu_y+1;
+//                    bottomx = bmu_x;    bottomy = bmu_y-1;
+                    
+//                    spreadable_idx[0] = is_in_map(upx, upy);
+//                    spreadable[0] = spreadable_idx[0]!=-1 ? 1 : 0;
+                    
+//                    spreadable_idx[1] = is_in_map(upx, upy);
+//                    spreadable[1] = spreadable_idx[1]!=-1 ? 1 : 0;
+                    
+//                    spreadable_idx[2] = is_in_map(upx, upy);
+//                    spreadable[2] = spreadable_idx[2]!=-1 ? 1 : 0;
+                    
+//                    spreadable_idx[3] = is_in_map(upx, upy);
+//                    spreadable[3] = spreadable_idx[3]!=-1 ? 1 : 0;
+                        
+//                    if (spreadable == 4'b1) begin
+//                        spread_weighs_en=1;
+//                    end else begin
+//                        grow_nodes_en=1;
+//                        grow_done = 4'b0;
+//                    end
+                    
+//                end else begin
+//                    not_man_dist_en=1;
+//                end
+//                adjust_weights_en = 0;
 //            end
 //        end
         
-//        if (is_spreadable_finished_idx == 3) begin // checked all neighbours exist
-//            if (spreadable == 4'b1) begin
-//                spread_weighs_en=1;
-//            end else begin
-//                grow_nodes_en=1;
-//            end
-//            is_spreadable_finished_idx = 0;            
+//        if (spread_weighs_en) begin
+//            node_errors[rmu] = growth_threshold;
+//            node_errors[rmu][30:23] = growth_threshold[30:23] - 1; // divide by 2 => exp-1
+//            update_error_en = 1;
+//            update_error_reset = 0;
 //        end
         
-//        if (check_in_map_done) begin
-//            spreadable[is_spreadable_finished_idx] = is_exist;
+//        if (update_error_done == 4'b1) begin
+//            update_error_en = 0;
+//            update_error_reset = 1;
+//            node_errors[spreadable_idx[0]] = updated_error[0];
+//            node_errors[spreadable_idx[1]] = updated_error[1];
+//            node_errors[spreadable_idx[2]] = updated_error[2];
+//            node_errors[spreadable_idx[3]] = updated_error[3];      
             
-//            check_in_map_en = 1;
-//            check_in_map_done = 0;
+//            not_man_dist_en = 1;      
+//        end
+//    end
+    
+//    reg [3:0] new_node_in_middle_en = 0;
+//    reg [3:0] new_node_in_middle_reset = 0;
+//    reg [DIGIT_DIM*4-1:0] new_node_in_middle_winner, new_node_in_middle_next_node;
+//    wire [3:0] new_node_in_middle_is_done;
+//    wire [DIGIT_DIM*4-1:0] new_node_in_middle_weight;
 
-//            if (is_spreadable_finished_idx==0) begin
-//                x = rightx; y=righty;
-//                is_spreadable_finished_idx = is_spreadable_finished_idx+1;
-                
-//            end else if (is_spreadable_finished_idx == 1) begin
-//                x = bottomx; y=bottomy;
-//                is_spreadable_finished_idx = is_spreadable_finished_idx+1;
-                
-//            end else if (is_spreadable_finished_idx == 2) begin
-//                x = leftx; y=lefty;
-//                is_spreadable_finished_idx = is_spreadable_finished_idx+1;
+//    genvar nim_i;
+//    for (nim_i=0; nim_i<4; nim_i=nim_i+1) begin
+//        gsom_grow_node_in_middle grow_node_in_middle(
+//            .clk(clk),
+//            .reset(new_node_in_middle_reset[nim_i]),
+//            .en(new_node_in_middle_en[nim_i]),
+//            .winner(new_node_in_middle_winner[DIGIT_DIM*(nim_i+1)-1:0]),
+//            .node_next(new_node_in_middle_next_node[DIGIT_DIM*(nim_i+1)-1:0]),
+//            .weight(new_node_in_middle_weight[DIGIT_DIM*(nim_i+1)-1:0]),
+//            .is_done(new_node_in_middle_is_done[nim_i])
+//        );
+//    end
+    
+//    reg [3:0] new_node_on_one_side_en = 0;
+//    reg [3:0] new_node_on_one_side_reset = 0;
+//    reg [DIGIT_DIM*4-1:0] new_node_on_one_side_winner, new_node_on_one_side_next_node;
+//    wire [3:0] new_node_on_one_side_is_done;
+//    wire [DIGIT_DIM*4-1:0] new_node_on_one_side_weight;
+    
+//    genvar noos_i;
+//    for (noos_i=0; noos_i<4; noos_i=noos_i+1) begin
+//        gsom_grow_node_on_one_side grow_node_on_one_side(
+//            .clk(clk),
+//            .reset(new_node_on_one_side_reset[noos_i]),
+//            .en(new_node_on_one_side_en[noos_i]),
+//            .winner(new_node_on_one_side_winner[DIGIT_DIM*(noos_i+1)-1:0]),
+//            .node_next(new_node_on_one_side_next_node[DIGIT_DIM*(noos_i+1)-1:0]),
+//            .weight(new_node_on_one_side_weight[DIGIT_DIM*(noos_i+1)-1:0]),
+//            .is_done(new_node_on_one_side_is_done[noos_i])
+//        );
+//    end
+    
+//    reg [3:0] new_node_one_older_neighbour_en = 0;
+//    reg [3:0] new_node_one_older_neighbour_reset = 0;
+//    reg [DIGIT_DIM*4-1:0] new_node_one_older_neighbour_winnerx, new_node_one_older_neighbour_winnery, 
+//                        new_node_one_older_neighbour_next_nodex, new_node_one_older_neighbour_next_nodey;
+//    wire [3:0] new_node_one_older_neighbour_is_done;
+//    wire [DIGIT_DIM*4-1:0] new_node_one_older_neighbour_weight;
+    
+    
+//    reg signed [LOG2_NODE_SIZE:0] u_idx;
+//    always @(posedge clk) begin
+//        if (grow_nodes_en && spreadable_idx[0]) begin
+            
+//            u_idx = is_in_map(upx, upy+1);
+//            if (u_idx != -1) begin
+//                new_node_in_middle_en[0] = 1;
+//                new_node_in_middle_reset[0] = 0;
+//                new_node_in_middle_winner[DIGIT_DIM*1-1 -:DIGIT_DIM] = node_list[rmu];
+//                new_node_in_middle_next_node[DIGIT_DIM*1-1 -:DIGIT_DIM] = u_idx;
                 
 //            end else begin
-//                check_in_map_en = 0;
-//            end 
+//                u_idx = is_in_map(bmu[1], bmu[0]-1);
+//                if (u_idx != -1) begin
+//                    new_node_on_one_side_en[0] = 1;
+//                    new_node_on_one_side_reset[0] = 0;
+//                    new_node_on_one_side_winner[DIGIT_DIM*1-1 -:DIGIT_DIM] = node_list[rmu];
+//                    new_node_on_one_side_next_node[DIGIT_DIM*1-1 -:DIGIT_DIM] = u_idx;
+                    
+//                end else begin
+//                    u_idx = is_in_map(bmu[1]+1, bmu[0]);
+//                    if (u_idx != -1) begin
+//                        new_node_on_one_side_en[0] = 1;
+//                        new_node_on_one_side_reset[0] = 0;
+//                        new_node_on_one_side_winner[DIGIT_DIM*1-1 -:DIGIT_DIM] = node_list[rmu];
+//                        new_node_on_one_side_next_node[DIGIT_DIM*1-1 -:DIGIT_DIM] = u_idx;
+                        
+//                    end else begin
+//                        u_idx = is_in_map(bmu[1]-1, bmu[0]);
+//                        if (u_idx != -1) begin
+//                            new_node_on_one_side_en[0] = 1;
+//                            new_node_on_one_side_reset[0] = 0;
+//                            new_node_on_one_side_winner[DIGIT_DIM*1-1 -:DIGIT_DIM] = node_list[rmu];
+//                            new_node_on_one_side_next_node[DIGIT_DIM*1-1 -:DIGIT_DIM] = u_idx;
+//                        end 
+//                    end
+//                end
+//            end
+            
+//            spreadable_idx[0] = 0;
+//        end else
+//            grow_done[0] = 1;
+//    end
+    
+//    reg signed [LOG2_NODE_SIZE:0] r_idx;
+//    always @(posedge clk) begin
+//        if (grow_nodes_en && spreadable_idx[1]) begin
+//            r_idx = is_in_map(right+1, righty);
+//            if (r_idx != -1) begin
+//                new_node_in_middle_en[1] = 1;
+//                new_node_in_middle_reset[1] = 0;
+//                new_node_in_middle_winner[DIGIT_DIM*2-1 -:DIGIT_DIM] = node_list[rmu];
+//                new_node_in_middle_next_node[DIGIT_DIM*2-1 -:DIGIT_DIM] = r_idx;
+                
+//            end else begin
+//                r_idx = is_in_map(bmu[1]-1, bmu[0]);
+//                if (r_idx != -1) begin
+//                    new_node_on_one_side_en[1] = 1;
+//                    new_node_on_one_side_reset[1] = 0;
+//                    new_node_on_one_side_winner[DIGIT_DIM*2-1 -:DIGIT_DIM] = node_list[rmu];
+//                    new_node_on_one_side_next_node[DIGIT_DIM*2-1 -:DIGIT_DIM] = r_idx;
+                    
+//                end else begin
+//                    r_idx = is_in_map(bmu[1], bmu[0]+1);
+//                    if (r_idx != -1) begin
+//                        new_node_on_one_side_en[1] = 1;
+//                        new_node_on_one_side_reset[1] = 0;
+//                        new_node_on_one_side_winner[DIGIT_DIM*2-1 -:DIGIT_DIM] = node_list[rmu];
+//                        new_node_on_one_side_next_node[DIGIT_DIM*2-1 -:DIGIT_DIM] = r_idx;
+                        
+//                    end else begin
+//                        r_idx = is_in_map(bmu[1], bmu[0]-1);
+//                        if (r_idx != -1) begin
+//                            new_node_on_one_side_en[1] = 1;
+//                            new_node_on_one_side_reset[1] = 0;
+//                            new_node_on_one_side_winner[DIGIT_DIM*2-1 -:DIGIT_DIM] = node_list[rmu];
+//                            new_node_on_one_side_next_node[DIGIT_DIM*2-1 -:DIGIT_DIM] = r_idx;
+                            
+//                        end 
+//                    end
+                
+//                end
+                
+                
+//            end
+            
+            
+//            spreadable_idx[1] = 0;
+//        end else
+//            grow_done[1] = 1;
+//    end
+    
+//    reg signed [LOG2_NODE_SIZE:0] b_idx;
+//    always @(posedge clk) begin
+//        if (grow_nodes_en && spreadable_idx[2]) begin
+//            b_idx = is_in_map(bottomx, bottomy-1);
+//            if (b_idx != -1) begin
+//                new_node_in_middle_en[2] = 1;
+//                new_node_in_middle_reset[2] = 0;
+//                new_node_in_middle_winner[DIGIT_DIM*3-1 -:DIGIT_DIM] = node_list[rmu];
+//                new_node_in_middle_next_node[DIGIT_DIM*3-1 -:DIGIT_DIM] = b_idx;
+                
+//            end else begin
+//                b_idx = is_in_map(bmu[1], bmu[0]+1);
+//                if (b_idx != -1) begin
+//                    new_node_on_one_side_en[2] = 1;
+//                    new_node_on_one_side_reset[2] = 0;
+//                    new_node_on_one_side_winner[DIGIT_DIM*3-1 -:DIGIT_DIM] = node_list[rmu];
+//                    new_node_on_one_side_next_node[DIGIT_DIM*3-1 -:DIGIT_DIM] = b_idx;
+                    
+//                end else begin
+//                    b_idx = is_in_map(bmu[1]+1, bmu[0]);
+//                    if (b_idx != -1) begin
+//                        new_node_on_one_side_en[2] = 1;
+//                        new_node_on_one_side_reset[2] = 0;
+//                        new_node_on_one_side_winner[DIGIT_DIM*3-1 -:DIGIT_DIM] = node_list[rmu];
+//                        new_node_on_one_side_next_node[DIGIT_DIM*3-1 -:DIGIT_DIM] = b_idx;
+                        
+//                    end else begin
+//                        b_idx = is_in_map(bmu[1]-1, bmu[0]);
+//                        if (b_idx != -1) begin
+//                            new_node_on_one_side_en[2] = 1;
+//                            new_node_on_one_side_reset[2] = 0;
+//                            new_node_on_one_side_winner[DIGIT_DIM*3-1 -:DIGIT_DIM] = node_list[rmu];
+//                            new_node_on_one_side_next_node[DIGIT_DIM*3-1 -:DIGIT_DIM] = b_idx;
+//                        end 
+//                    end
+//                end
+//            end
+//            spreadable_idx[2] = 0;
+//        end else
+//            grow_done[2] = 1;
+//    end
+    
+//    reg signed [LOG2_NODE_SIZE:0] l_idx;    
+//    always @(posedge clk) begin
+//        if (grow_nodes_en && spreadable_idx[3]) begin
+//            l_idx = is_in_map(upx, upy+1);
+//            if (l_idx != -1) begin
+//                new_node_in_middle_en[3] = 1;
+//                new_node_in_middle_reset[3] = 0;
+//                new_node_in_middle_winner[DIGIT_DIM*4-1 -:DIGIT_DIM] = node_list[rmu];
+//                new_node_in_middle_next_node[DIGIT_DIM*4-1 -:DIGIT_DIM] = l_idx;
+                
+//            end else begin
+//                l_idx = is_in_map(bmu[1], bmu[0]-1);
+//                if (l_idx != -1) begin
+//                    new_node_on_one_side_en[3] = 1;
+//                    new_node_on_one_side_reset[3] = 0;
+//                    new_node_on_one_side_winner[DIGIT_DIM*4-1 -:DIGIT_DIM] = node_list[rmu];
+//                    new_node_on_one_side_next_node[DIGIT_DIM*4-1 -:DIGIT_DIM] = l_idx;
+                    
+//                end else begin
+//                    l_idx = is_in_map(bmu[1]+1, bmu[0]);
+//                    if (l_idx != -1) begin
+//                        new_node_on_one_side_en[3] = 1;
+//                        new_node_on_one_side_reset[3] = 0;
+//                        new_node_on_one_side_winner[DIGIT_DIM*4-1 -:DIGIT_DIM] = node_list[rmu];
+//                        new_node_on_one_side_next_node[DIGIT_DIM*4-1 -:DIGIT_DIM] = l_idx;
+                        
+//                    end else begin
+//                        l_idx = is_in_map(bmu[1]-1, bmu[0]);
+//                        if (l_idx != -1) begin
+//                            new_node_on_one_side_en[3] = 1;
+//                            new_node_on_one_side_reset[3] = 0;
+//                            new_node_on_one_side_winner[DIGIT_DIM*4-1 -:DIGIT_DIM] = node_list[rmu];
+//                            new_node_on_one_side_next_node[DIGIT_DIM*4-1 -:DIGIT_DIM] = l_idx;
+                            
+//                        end 
+//                    end
+//                end
+//            end
+//            spreadable_idx[3] = 0;
+//        end else
+//            grow_done[3] = 1;
+//    end
+    
+//    always @(posedge clk) begin 
+//        // insert new node
+//        for (i=1;i<=4;i=i+1) begin
+//            if (new_node_in_middle_is_done[i]) begin
+//                new_node_in_middle_en[i] = 0;
+//                new_node_in_middle_reset[i] = 1;
+//                insert_new_node(bmu[1], bmu[0], new_node_in_middle_weight[DIGIT_DIM*i-1 -:DIGIT_DIM]);
+//                grow_done[i-1] = 1;
+//            end
+//            if (new_node_on_one_side_is_done[i]) begin
+//                new_node_on_one_side_en[i] = 0;
+//                new_node_on_one_side_reset[i] = 1;
+//                insert_new_node(bmu[1], bmu[0], new_node_on_one_side_weight[DIGIT_DIM*i-1 -:DIGIT_DIM]);
+//                grow_done[i-1] = 1;
+//            end
+//        end
+//        if (grow_done==4'b1) begin
+//            not_man_dist_en = 1;
 //        end
 //    end
     
@@ -638,56 +983,67 @@ module gsom
 //                update_en=0;
 //                update_reset=1;
 //                node_errors[rmu] = node_errors[rmu] + update_error_out;
-//                adjust_weights_en = 1;
+//                if (growing_iter_en)
+//                    adjust_weights_en = 1;
 //            end 
             
 //            if (update_neighbour_done == {DIM{1'b1}}) begin
 //                node_list[rmu_i] = update_neighbour_out;
 //                update_neighbour_en=0;
 //                update_neighbour_reset=1;
-//            end          
-                
-//            bmu_j = bmu_j + 1;
+//            end      
             
-//            if (bmu_j < bmu_y+radius+1) begin
-//                bmu_j = bmu_y-radius;                
-//                bmu_i = bmu_i + 1;
+//            if (!adjust_weights_en) begin
+//                bmu_j = bmu_j + 1;
                 
-//                if (bmu_i < bmu_x+radius+1) begin
-//                    nb_search_en = 0; // neighbourhood search finished        
-//                    next_t1_en = 1; // go to the next input
-//                end else
-//                    nb_search_en = 1; // next neighbour
-                
-//                not_man_dist_en = 0; // close this block
-                
-//            end else begin
-//                nb_search_en = 1; // next neighbour
-//                not_man_dist_en = 0; // close this block
-//            end
-            
-//            if (nb_search_en) begin
-//                abs_bmu_i = bmu_i>0 ? bmu_i : -bmu_i;
-//                abs_bmu_j = bmu_j>0 ? bmu_j : -bmu_j;
-                
-//                i_j_signs[0] = bmu_i>0 ? 0 : 1;
-//                i_j_signs[1] = bmu_j>0 ? 0 : 1;
-                
-//                if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==0)) begin
-//                    rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
-//                    nb_search_en = 1;
-//                end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==1)) begin
-//                    rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE];
-//                    nb_search_en = 1;
-//                end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==0)) begin
-//                    rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE];
-//                    nb_search_en = 1;
-//                end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==1)) begin
-//                    rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE];
-//                    nb_search_en = 1;
+//                if (bmu_j < bmu_y+radius+1) begin
+//                    bmu_j = bmu_y-radius;                
+//                    bmu_i = bmu_i + 1;
+                    
+//                    if (bmu_i < bmu_x+radius+1) begin
+//                        nb_search_en = 0; // neighbourhood search finished        
+//                        next_t1_en = 1; // go to the next input
+//                    end else
+//                        nb_search_en = 1; // next neighbour
+                    
+//                    not_man_dist_en = 0; // close this block
+                    
 //                end else begin
-//                    nb_search_en = 0;
-//                    not_man_dist_en = 1;
+//                    nb_search_en = 1; // next neighbour
+//                    not_man_dist_en = 0; // close this block
+//                end
+            
+//                if (nb_search_en) begin
+//                    rmu_i = is_in_map(bmu_i, bmu_j);
+//                    if (rmu_i != -1) begin
+//                        nb_search_en = 1;
+//                    end else begin
+//                        nb_search_en = 0;
+//                        not_man_dist_en = 1;
+//                    end
+                        
+////                    abs_bmu_i = bmu_i>0 ? bmu_i : -bmu_i;
+////                    abs_bmu_j = bmu_j>0 ? bmu_j : -bmu_j;
+                    
+////                    i_j_signs[0] = bmu_i>0 ? 0 : 1;
+////                    i_j_signs[1] = bmu_j>0 ? 0 : 1;
+                    
+////                    if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==0)) begin
+////                        rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
+////                        nb_search_en = 1;
+////                    end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==1)) begin
+////                        rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE];
+////                        nb_search_en = 1;
+////                    end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==0)) begin
+////                        rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE];
+////                        nb_search_en = 1;
+////                    end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==1)) begin
+////                        rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE];
+////                        nb_search_en = 1;
+////                    end else begin
+////                        nb_search_en = 0;
+////                        not_man_dist_en = 1;
+////                    end
 //                end
 //            end
 //        end
