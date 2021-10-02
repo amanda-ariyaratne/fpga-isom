@@ -8,7 +8,7 @@ Nov 18 2020
 /home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/fpa_comparator.v,1632048413,verilog,,/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/fpa_distance.v,,fpa_comparator,,,,,,,,
 /home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/fpa_distance.v,1631366369,verilog,,/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/fpa_multiplier.v,,fpa_distance,,,,,,,,
 /home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/fpa_multiplier.v,1631366369,verilog,,/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v,,fpa_multiplier,,,,,,,,
-/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v,1633161182,verilog,,/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_euclidean_distance.v,,gsom,,,,,,,,
+/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v,1633177643,verilog,,/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sim_1/new/gsom_tb.v,,gsom,,,,,,,,
 /home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_euclidean_distance.v,1632188544,verilog,,/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_grow_node_in_middle.v,,gsom_euclidean_distance,,,,,,,,
 /home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_grow_node_in_middle.v,1632204469,verilog,,/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_grow_node_on_one_side.v,,gsom_grow_node_in_middle,,,,,,,,
 /home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_grow_node_on_one_side.v,1632204892,verilog,,/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_learning_rate.v,,gsom_grow_node_on_one_side,,,,,,,,

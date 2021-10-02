@@ -62,25 +62,25 @@ reg mul_3_en = 0;
 always @(posedge reset) begin
     if (en && init) begin
         
-        mul_num1 = 32'h40000000; // 2
+        add_num1 = 32'h40000000; // 2
         ///****** 2^(x-3) X 1.y ******///
-        mul_num2[31] = 0; // sign bit
-        mul_num2[30:23] = node_count[30:23] - 3; // exponent - 3
-        mul_num2[22:0] = node_count[22:0]; // mantissa is the same
+        add_num2[31] = 0; // sign bit
+        add_num2[30:23] = node_count[30:23] - 3; // exponent - 3
+        add_num2[22:0] = node_count[22:0]; // mantissa is the same
         
-        mul_en = 1;
-        mul_reset = 0;
+        add_en = 1;
+        add_reset = 0;
         init = 0; 
         mul_1_en = 1;       
     end
     
-    if (mul_is_done && mul_1_en) begin
-        mul_en = 0;
-        mul_reset = 1;
+    if (add_is_done && mul_1_en) begin
+        add_en = 0;
+        add_reset = 1;
         
         add_num1 = 32'h3F800000;
         add_num2[31] = 1; // indicate subtraction
-        add_num2[30:23] = R[30:23] - mul_num_out[30:23];
+        add_num2[30:23] = R[30:23] - add_num_out;
         add_num2[22:0] = R[22:0];
         add_en = 1;
         add_reset = 0;
