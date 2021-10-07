@@ -303,10 +303,9 @@ module gsom
         if (grow_en) begin
             grow_en = 0;
             next_t1_en = 1;
-            next_iteration_en = 1;      // ADDED
+            next_iteration_en = 1;      // ADDED 
         end
     end
-
     
     always @(posedge clk) begin
         if (next_iteration_en && smoothing_iter_en) begin
