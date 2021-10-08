@@ -67,6 +67,7 @@ fpa_multiplier multiply(
 );
 
 always @(posedge reset) begin
+    $display("Update_reset");
     done = 0;
     en_1=1;
 end

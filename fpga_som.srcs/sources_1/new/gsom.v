@@ -211,7 +211,6 @@ module gsom
             
             if (mul_is_done) begin
                 growth_threshold = mul_num_out;
-                growth_threshold[DIGIT_DIM-1] = 0; //make the value positive
                 mul_en = 0;
                 mul_reset = 1;
                 fit_en = 1;
@@ -265,7 +264,7 @@ module gsom
                 iteration = iteration + 1;
                 $display("iteration", iteration);
                 
-                if (iteration==1)
+                if (iteration==2)
                     $finish;
                 
                 // neighbourhood                
@@ -362,7 +361,7 @@ module gsom
         if (next_t1_en) begin
             if (t1 < TRAIN_ROWS-1) begin
                 t1 = t1 + 1;   
-                $display("t1", t1);
+                $display("t1", t1, "node_count", node_count);
                 dist_enable = 1;
             end else begin
                 next_iteration_en = 1;
@@ -574,7 +573,6 @@ module gsom
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));   
             
-            $display("man_dist", man_dist);           
             if (man_dist == 0) begin
                 $display("update BMU");
                 update_in_1 = node_list[rmu];
@@ -596,6 +594,7 @@ module gsom
             end
         end
     end
+    
     reg signed [LOG2_ROWS:0] leftx, rightx, upx, bottomx;
     reg signed [LOG2_COLS:0] lefty, righty, upy, bottomy;
     
@@ -612,16 +611,16 @@ module gsom
             x_y_signs[0] = x[LOG2_ROWS];
             x_y_signs[1] = y[LOG2_COLS];
             
-            if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*1-1 -:(LOG2_NODE_SIZE+1)] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==0)) begin
+            if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*1-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs[0]==0) && (x_y_signs[1]==0)) begin
                 is_in_map = map[abs_x][abs_y][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
                 
-            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)] != -1) && (x_y_signs[0]==0) && (x_y_signs[1]==1)) begin
+            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs[0]==0) && (x_y_signs[1]==1)) begin
                 is_in_map = map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)];
                 
-            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)] != -1) && (x_y_signs[0]==1) && (x_y_signs[1]==0)) begin
+            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs[0]==1) && (x_y_signs[1]==0)) begin
                 is_in_map = map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)];
                 
-            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != -1) && (x_y_signs[0]==1) && (x_y_signs[1]==1)) begin
+            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs[0]==1) && (x_y_signs[1]==1)) begin
                 is_in_map = map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*4-1 -:(LOG2_NODE_SIZE+1)];
                 
             end else begin
@@ -638,9 +637,8 @@ module gsom
         reg [LOG2_COLS-1:0] abs_y;
         reg [1:0] x_y_signs;
         
+        
         begin
-            if (x == 1'bx)
-                $finish;
             abs_x = x[LOG2_ROWS-1:0];
             abs_y = y[LOG2_COLS-1:0];
             
@@ -652,12 +650,12 @@ module gsom
             node_coords[node_count][0] = x;
             node_coords[node_count][1] = y;
             node_count = node_count + 1;  
-            $display("inserted", x, y);  
+            $display("inserted", x, y, node_count);  
         end
     endtask
     
     reg [3:0] spreadable;
-    reg [LOG2_NODE_SIZE-1:0] spreadable_idx [3:0];
+    reg signed [LOG2_NODE_SIZE:0] spreadable_idx [3:0];
     reg [3:0] grow_done;
 
     reg update_error_en = 0;
@@ -682,16 +680,18 @@ module gsom
     
     always @(posedge clk) begin
         if (adjust_weights_en) begin
-            $display("adjust_weights_en"); 
+            $display("adjust_weights_en %d", rmu); 
             comp_reset = 0;
             comp_en = 1;
             comp_in_1 = node_errors[rmu];
             comp_in_2 = growth_threshold;
         
             if (comp_done) begin
+                $display("adjust_weights_en && comp_done %h %h %d", comp_in_1, comp_in_2, comp_out);
                 comp_reset = 1;
                 comp_en = 0;
                 if (comp_out == 1) begin
+                    $display("comp_out");
                     leftx = bmu_x-1;    lefty = bmu_y;
                     rightx = bmu_x+1;   righty = bmu_y;
                     upx = bmu_x;        upy = bmu_y+1;
@@ -713,11 +713,11 @@ module gsom
                         spread_weighs_en=1;
                     end else begin
                         grow_nodes_en=1;
-                        grow_done = 4'b0;
+                        grow_done = 0;
                     end
                     
                 end else begin
-                    not_man_dist_en=1;
+                    not_man_dist_en = 1;
                 end
                 adjust_weights_en = 0;
             end
@@ -729,17 +729,18 @@ module gsom
             node_errors[rmu][30:23] = growth_threshold[30:23] - 1; // divide by 2 => exp-1
             update_error_en = 1;
             update_error_reset = 0;
-        end
-        
-        if (update_error_done == {4{1'b1}}) begin
-            update_error_en = 0;
-            update_error_reset = 1;
-            node_errors[spreadable_idx[0]] = updated_error[0];
-            node_errors[spreadable_idx[1]] = updated_error[1];
-            node_errors[spreadable_idx[2]] = updated_error[2];
-            node_errors[spreadable_idx[3]] = updated_error[3];      
             
-            not_man_dist_en = 1;      
+            if (update_error_done == {4{1'b1}}) begin
+                update_error_en = 0;
+                update_error_reset = 1;
+                node_errors[spreadable_idx[0]] = updated_error[0];
+                node_errors[spreadable_idx[1]] = updated_error[1];
+                node_errors[spreadable_idx[2]] = updated_error[2];
+                node_errors[spreadable_idx[3]] = updated_error[3];      
+                
+                not_man_dist_en = 1;   
+                spread_weighs_en = 0;   
+            end
         end
     end
     
@@ -791,8 +792,8 @@ module gsom
     
     reg signed [LOG2_NODE_SIZE:0] u_idx;
     always @(posedge clk) begin
-        if (grow_nodes_en && spreadable_idx[0]) begin
-            $display("grow_nodes_en - 0"); 
+        if (grow_nodes_en && spreadable_idx[0]==-1) begin
+            $display("grow_nodes_en - 0", rmu); 
             u_idx = is_in_map(upx, upy+1);
             if (u_idx != -1) begin
                 new_node_in_middle_en[0] = 1;
@@ -835,8 +836,8 @@ module gsom
     
     reg signed [LOG2_NODE_SIZE:0] r_idx;
     always @(posedge clk) begin
-        if (grow_nodes_en && spreadable_idx[1]) begin
-            $display("grow_nodes_en - 1"); 
+        if (grow_nodes_en && spreadable_idx[1]==-1) begin
+            $display("grow_nodes_en - 1", rmu); 
             r_idx = is_in_map(rightx+1, righty);
             if (r_idx != -1) begin
                 new_node_in_middle_en[1] = 1;
@@ -870,10 +871,7 @@ module gsom
                             
                         end 
                     end
-                
                 end
-                
-                
             end
             
             
@@ -884,8 +882,8 @@ module gsom
     
     reg signed [LOG2_NODE_SIZE:0] b_idx;
     always @(posedge clk) begin
-        if (grow_nodes_en && spreadable_idx[2]) begin
-            $display("grow_nodes_en - 2"); 
+        if (grow_nodes_en && spreadable_idx[2]==-1) begin
+            $display("grow_nodes_en - 2", rmu); 
             b_idx = is_in_map(bottomx, bottomy-1);
             if (b_idx != -1) begin
                 new_node_in_middle_en[2] = 1;
@@ -927,10 +925,11 @@ module gsom
     
     reg signed [LOG2_NODE_SIZE:0] l_idx;    
     always @(posedge clk) begin
-        if (grow_nodes_en && spreadable_idx[3]) begin
-            $display("grow_nodes_en - 3"); 
-            l_idx = is_in_map(upx, upy+1);
+        if (grow_nodes_en && spreadable_idx[3]==-1) begin
+            
+            l_idx = is_in_map(leftx-1, lefty);
             if (l_idx != -1) begin
+                $display("grow_nodes_en - 3 case 1"); 
                 new_node_in_middle_en[3] = 1;
                 new_node_in_middle_reset[3] = 0;
                 new_node_in_middle_winner[DIGIT_DIM*4-1 -:DIGIT_DIM] = node_list[rmu];
@@ -939,6 +938,7 @@ module gsom
             end else begin
                 l_idx = is_in_map(bmu[1], bmu[0]-1);
                 if (l_idx != -1) begin
+                    $display("grow_nodes_en - 3 case 2"); 
                     new_node_on_one_side_en[3] = 1;
                     new_node_on_one_side_reset[3] = 0;
                     new_node_on_one_side_winner[DIGIT_DIM*4-1 -:DIGIT_DIM] = node_list[rmu];
@@ -947,6 +947,7 @@ module gsom
                 end else begin
                     l_idx = is_in_map(bmu[1]+1, bmu[0]);
                     if (l_idx != -1) begin
+                        $display("grow_nodes_en - 3 case 3"); 
                         new_node_on_one_side_en[3] = 1;
                         new_node_on_one_side_reset[3] = 0;
                         new_node_on_one_side_winner[DIGIT_DIM*4-1 -:DIGIT_DIM] = node_list[rmu];
@@ -955,6 +956,7 @@ module gsom
                     end else begin
                         l_idx = is_in_map(bmu[1]-1, bmu[0]);
                         if (l_idx != -1) begin
+                            $display("grow_nodes_en - 3 case 4"); 
                             new_node_on_one_side_en[3] = 1;
                             new_node_on_one_side_reset[3] = 0;
                             new_node_on_one_side_winner[DIGIT_DIM*4-1 -:DIGIT_DIM] = node_list[rmu];
@@ -979,7 +981,7 @@ module gsom
                 insert_new_node(bmu[1], bmu[0], new_node_in_middle_weight[DIGIT_DIM*i-1 -:DIGIT_DIM]);
                 grow_done[i-1] = 1;
             end
-            if (new_node_on_one_side_is_done[i] && grow_done[i-1]) begin
+            if (new_node_on_one_side_is_done[i] && !grow_done[i-1]) begin
                 $display("insert new_node_on_one_side_is_done", i); 
                 new_node_on_one_side_en[i] = 0;
                 new_node_on_one_side_reset[i] = 1;
