@@ -265,7 +265,7 @@ module gsom
                 iteration = iteration + 1;
                 $display("iteration", iteration);
                 
-                if (iteration==2)
+                if (iteration==1)
                     $finish;
                 
                 // neighbourhood                
@@ -298,7 +298,6 @@ module gsom
             lr_reset = 0;
             lr_en = 1;
             if (lr_is_done) begin
-                $display("Learning Rate DONE");
                 lr_en = 0;
                 lr_reset = 1;
                 current_learning_rate = lr_out;
@@ -423,7 +422,6 @@ module gsom
     integer node_count_i;
     always @(posedge clk) begin
         if (dist_enable) begin
-            $display("dist_enable");
             distance_X=trainX[t1];
             distance_reset=0;
             distance_en=1;
@@ -443,7 +441,6 @@ module gsom
     
     always @(posedge clk) begin
         if (min_distance_en) begin
-            $display("min_distance_en");
             comp_in_1 = min_distance;
             comp_in_2 = distance_out[node_count_i];
             comp_reset = 0;
@@ -575,14 +572,18 @@ module gsom
     always @(posedge clk) begin    
         if (nb_search_en && !update_en && !update_neighbour_en) begin  
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
-            man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
+            man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));   
+            
+            $display("man_dist", man_dist);           
             if (man_dist == 0) begin
+                $display("update BMU");
                 update_in_1 = node_list[rmu];
                 update_in_2 = trainX[t1];
                 update_learning_rate = current_learning_rate;
                 update_en=1; 
                 update_reset=0;             
             end else if (man_dist <= radius) begin
+                $display("update neighbour");
                 update_neighbour_in_1 = node_list[rmu];
                 update_neighbour_in_2 = node_list[rmu_i];
                 update_neighbour_learning_rate = current_learning_rate;
@@ -648,8 +649,9 @@ module gsom
             node_list[node_count] = weights;
             node_coords[node_count][0] = x;
             node_coords[node_count][1] = y;
-            node_count = node_count + 1;    
-//            insert_new_node = 1;       
+            node_count = node_count + 1;  
+            $display("inserted", x, y);  
+            $finish;
         end
     endtask
     
@@ -969,14 +971,14 @@ module gsom
     always @(posedge clk) begin 
         // insert new node
         for (i=1;i<=4;i=i+1) begin
-            if (new_node_in_middle_is_done[i]) begin
+            if (new_node_in_middle_is_done[i] && !grow_done[i-1]) begin
                 $display("insert new_node_in_middle_en", i); 
                 new_node_in_middle_en[i] = 0;
                 new_node_in_middle_reset[i] = 1;
                 insert_new_node(bmu[1], bmu[0], new_node_in_middle_weight[DIGIT_DIM*i-1 -:DIGIT_DIM]);
                 grow_done[i-1] = 1;
             end
-            if (new_node_on_one_side_is_done[i]) begin
+            if (new_node_on_one_side_is_done[i] && grow_done[i-1]) begin
                 new_node_on_one_side_en[i] = 0;
                 new_node_on_one_side_reset[i] = 1;
                 insert_new_node(bmu[1], bmu[0], new_node_on_one_side_weight[DIGIT_DIM*i-1 -:DIGIT_DIM]);
@@ -987,6 +989,8 @@ module gsom
             not_man_dist_en = 1;
         end
     end
+    
+    reg check_valid_idx = 0;
     
     always @(posedge clk) begin
         if ((update_done == {DIM{1'b1}}) || (update_neighbour_done == {DIM{1'b1}}) || not_man_dist_en) begin
@@ -1008,24 +1012,23 @@ module gsom
             if (!adjust_weights_en) begin
                 bmu_j = bmu_j + 1;
                 
-                if (bmu_j < bmu_y+radius+1) begin
+                if (bmu_j == bmu_y+radius+1) begin
                     bmu_j = bmu_y-radius;                
                     bmu_i = bmu_i + 1;
                     
-                    if (bmu_i < bmu_x+radius+1) begin
+                    if (bmu_i == bmu_x+radius+1) begin
                         nb_search_en = 0; // neighbourhood search finished        
                         next_t1_en = 1; // go to the next input
                     end else
                         nb_search_en = 1; // next neighbour
-                    
-                    not_man_dist_en = 0; // close this block
-                    
                 end else begin
                     nb_search_en = 1; // next neighbour
-                    not_man_dist_en = 0; // close this block
                 end
+                
+                not_man_dist_en = 0; // close this block
+                check_valid_idx = 1;
             
-                if (nb_search_en) begin
+                if (nb_search_en && check_valid_idx) begin
                     rmu_i = is_in_map(bmu_i, bmu_j);
                     if (rmu_i != -1) begin
                         nb_search_en = 1;
@@ -1033,29 +1036,7 @@ module gsom
                         nb_search_en = 0;
                         not_man_dist_en = 1;
                     end
-                        
-//                    abs_bmu_i = bmu_i>0 ? bmu_i : -bmu_i;
-//                    abs_bmu_j = bmu_j>0 ? bmu_j : -bmu_j;
-                    
-//                    i_j_signs[0] = bmu_i>0 ? 0 : 1;
-//                    i_j_signs[1] = bmu_j>0 ? 0 : 1;
-                    
-//                    if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==0)) begin
-//                        rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
-//                        nb_search_en = 1;
-//                    end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==0) && (i_j_signs[1]==1)) begin
-//                        rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*2-1 -:LOG2_NODE_SIZE];
-//                        nb_search_en = 1;
-//                    end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==0)) begin
-//                        rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*3-1 -:LOG2_NODE_SIZE];
-//                        nb_search_en = 1;
-//                    end else if ((map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != -1) && (i_j_signs[0]==1) && (i_j_signs[1]==1)) begin
-//                        rmu_i = map[abs_bmu_i][abs_bmu_j][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE];
-//                        nb_search_en = 1;
-//                    end else begin
-//                        nb_search_en = 0;
-//                        not_man_dist_en = 1;
-//                    end
+                    check_valid_idx = 0;
                 end
             end
         end
