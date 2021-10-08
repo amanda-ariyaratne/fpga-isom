@@ -15,7 +15,7 @@ module gsom
         parameter LOG2_ROWS = 7,         
         parameter LOG2_COLS = 7,
 
-        parameter MAX_NODE_SIZE = 10,
+        parameter MAX_NODE_SIZE = 100,
         parameter LOG2_NODE_SIZE = 14,
         
         parameter GROWING_ITERATIONS = 100,
@@ -639,6 +639,8 @@ module gsom
         reg [1:0] x_y_signs;
         
         begin
+            if (x == 1'bx)
+                $finish;
             abs_x = x[LOG2_ROWS-1:0];
             abs_y = y[LOG2_COLS-1:0];
             
@@ -651,7 +653,6 @@ module gsom
             node_coords[node_count][1] = y;
             node_count = node_count + 1;  
             $display("inserted", x, y);  
-            $finish;
         end
     endtask
     
@@ -666,7 +667,7 @@ module gsom
     
     genvar error_i;
     generate 
-        for(error_i=0;error_i<4;error_i=error_i+1) begin
+        for(error_i=0;error_i<4;error_i=error_i+1) begin // 4 = up + down + left + right
             fpa_multiplier update_error(
                 .clk(clk),
                 .en(update_error_en),
@@ -699,16 +700,16 @@ module gsom
                     spreadable_idx[0] = is_in_map(upx, upy);
                     spreadable[0] = spreadable_idx[0]!=-1 ? 1 : 0;
                     
-                    spreadable_idx[1] = is_in_map(upx, upy);
+                    spreadable_idx[1] = is_in_map(rightx, righty);
                     spreadable[1] = spreadable_idx[1]!=-1 ? 1 : 0;
                     
-                    spreadable_idx[2] = is_in_map(upx, upy);
+                    spreadable_idx[2] = is_in_map(bottomx, bottomy);
                     spreadable[2] = spreadable_idx[2]!=-1 ? 1 : 0;
                     
-                    spreadable_idx[3] = is_in_map(upx, upy);
+                    spreadable_idx[3] = is_in_map(leftx, lefty);
                     spreadable[3] = spreadable_idx[3]!=-1 ? 1 : 0;
                         
-                    if (spreadable == 4'b1) begin
+                    if (spreadable == {4{1'b1}}) begin
                         spread_weighs_en=1;
                     end else begin
                         grow_nodes_en=1;
@@ -730,7 +731,7 @@ module gsom
             update_error_reset = 0;
         end
         
-        if (update_error_done == 4'b1) begin
+        if (update_error_done == {4{1'b1}}) begin
             update_error_en = 0;
             update_error_reset = 1;
             node_errors[spreadable_idx[0]] = updated_error[0];
@@ -972,13 +973,14 @@ module gsom
         // insert new node
         for (i=1;i<=4;i=i+1) begin
             if (new_node_in_middle_is_done[i] && !grow_done[i-1]) begin
-                $display("insert new_node_in_middle_en", i); 
+                $display("insert new_node_in_middle_is_done", i); 
                 new_node_in_middle_en[i] = 0;
                 new_node_in_middle_reset[i] = 1;
                 insert_new_node(bmu[1], bmu[0], new_node_in_middle_weight[DIGIT_DIM*i-1 -:DIGIT_DIM]);
                 grow_done[i-1] = 1;
             end
             if (new_node_on_one_side_is_done[i] && grow_done[i-1]) begin
+                $display("insert new_node_on_one_side_is_done", i); 
                 new_node_on_one_side_en[i] = 0;
                 new_node_on_one_side_reset[i] = 1;
                 insert_new_node(bmu[1], bmu[0], new_node_on_one_side_weight[DIGIT_DIM*i-1 -:DIGIT_DIM]);
