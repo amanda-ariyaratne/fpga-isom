@@ -32,6 +32,7 @@ module gsom_tb();
                 $finish;
             #10;
         end
+        $finish;
     end
     
 
