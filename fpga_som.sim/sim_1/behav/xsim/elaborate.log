@@ -11,6 +11,7 @@ Time Resolution for simulation is 1ps
 Compiling module xil_defaultlib.fpa_multiplier
 Compiling module xil_defaultlib.fpa_adder
 Compiling module xil_defaultlib.gsom_learning_rate
+Compiling module xil_defaultlib.gsom
 Compiling module xil_defaultlib.gsom_tb
 Compiling module xil_defaultlib.glbl
 Built simulation snapshot gsom_tb_behav

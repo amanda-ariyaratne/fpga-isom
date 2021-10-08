@@ -36,12 +36,12 @@ module gsom
         parameter spread_factor_logval = 32'hBF317218, // BE9A209B = -0.30102999566
         
         parameter dimensions_ieee754 = 32'h40800000, // 4
-        parameter initial_learning_rate=32'h3E99999A, // 0.3
+        parameter initial_learning_rate=32'h3F666666, // 0.9
         parameter smooth_learning_factor= 32'h3F4CCCCD, //0.8
         parameter max_radius=4,
         parameter FD=32'h3DCCCCCD, //0.1
         parameter r=32'h40733333, //3.8
-        parameter alpha=32'h3F666666, //0.9
+        parameter alpha=32'h3F333333, //0.7
         parameter initial_node_size=30000
 
     )(
@@ -257,8 +257,9 @@ module gsom
     );
 
     always @(posedge clk) begin
-        if (next_iteration_en) begin
+        if (next_iteration_en && growing_iter_en) begin
             if (iteration < GROWING_ITERATIONS) begin
+                $display("iter", iteration);
                 iteration = iteration + 1;
                 
                 // neighbourhood                
@@ -278,32 +279,33 @@ module gsom
                     current_learning_rate = learning_rate;
                     grow_en = 1;
                 end
-                
-                next_iteration_en = 0;
             end else begin
+                $display("iter", iteration);
                 iteration = -1;   // reset iteration count
+                $finish;
             end
+            next_iteration_en = 0;
         end
  
         
         // calculate learning rate
-        if (get_LR_en) begin
+        if (get_LR_en && growing_iter_en) begin
             lr_reset = 0;
             lr_en = 1;
             get_LR_en = 0;
-        end        
-        if (lr_is_done) begin
-            lr_en = 0;
-            lr_reset = 1;
-            current_learning_rate = lr_out;
-            grow_en = 1;
+            if (lr_is_done) begin
+                lr_en = 0;
+                lr_reset = 1;
+                current_learning_rate = lr_out;
+                grow_en = 1;
+            end
         end
         
         // grow network
         if (grow_en) begin
             grow_en = 0;
+            t1 = -1;
             next_t1_en = 1;
-            next_iteration_en = 1;      // ADDED 
         end
     end
     
@@ -323,12 +325,10 @@ module gsom
                 // learning rate
                 if (iteration != 0)
                     get_LR_en = 1;
-                
-                next_iteration_en = 0;
             end else begin
                 iteration = -1;   // reset iteration count
-                $finish;
             end
+            next_iteration_en = 0;
         end       
         
         // calculate learning rate
@@ -336,13 +336,14 @@ module gsom
             lr_en = 1;
             lr_reset = 0;
             get_LR_en = 0;
+            
+            if (lr_is_done) begin
+                lr_en = 0;
+                lr_reset = 1;
+                current_learning_rate = lr_out;
+                smooth_en = 1;
+            end
         end        
-        if (lr_is_done && smoothing_iter_en) begin
-            lr_en = 0;
-            lr_reset = 1;
-            current_learning_rate = lr_out;
-            smooth_en = 1;
-        end
         
         if (smooth_en) begin
             smooth_en = 0;
@@ -352,17 +353,17 @@ module gsom
     end   
 
     
-//    always @(posedge clk) begin
-//        if (next_t1_en) begin
-//            if (t1 < TRAIN_ROWS) begin
-//                t1 = t1 + 1;   
-//                dist_enable = 1;        
-//            end else begin
-//                next_iteration_en = 1;
-//            end
-//            next_t1_en = 0;
-//        end
-//    end
+    always @(posedge clk) begin
+        if (next_t1_en) begin
+            if (t1 < TRAIN_ROWS) begin
+                t1 = t1 + 1;   
+                //dist_enable = 1;        
+            end else begin
+                next_iteration_en = 1;
+            end
+            //next_t1_en = 0;
+        end
+    end
     
 
     
