@@ -168,6 +168,7 @@ module gsom
     
     always @(posedge clk) begin
         if (init_gsom) begin
+            $display("init_gsom");
             map[1][1][LOG2_NODE_SIZE:0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 1;
@@ -199,6 +200,7 @@ module gsom
         end
         
         if (init_variables) begin
+            $display("init_variables");
             learning_rate = initial_learning_rate;
             
             // growth threshold            
@@ -260,8 +262,11 @@ module gsom
     always @(posedge clk) begin
         if (next_iteration_en && growing_iter_en) begin
             if (iteration < GROWING_ITERATIONS) begin
-                $display("iter", iteration);
                 iteration = iteration + 1;
+                $display("iteration", iteration);
+                
+                if (iteration==2)
+                    $finish;
                 
                 // neighbourhood                
                 if (iteration <= delta_growing_iter) begin
@@ -281,7 +286,6 @@ module gsom
                     grow_en = 1;
                 end
             end else begin
-                $display("iter", iteration);
                 iteration = -1;   // reset iteration count
                 $finish;
             end
@@ -290,19 +294,22 @@ module gsom
  
         // calculate learning rate
         if (get_LR_en && growing_iter_en) begin
+            $display("Learning Rate");
             lr_reset = 0;
             lr_en = 1;
-            get_LR_en = 0;
             if (lr_is_done) begin
+                $display("Learning Rate DONE");
                 lr_en = 0;
                 lr_reset = 1;
                 current_learning_rate = lr_out;
+                get_LR_en = 0;
                 grow_en = 1;
             end
         end
         
         // grow network
         if (grow_en) begin
+            $display("Grow");
             grow_en = 0;
             t1 = -1;
             next_t1_en = 1;
@@ -335,12 +342,11 @@ module gsom
         if (get_LR_en && smoothing_iter_en) begin
             lr_en = 1;
             lr_reset = 0;
-            get_LR_en = 0;
-            
             if (lr_is_done) begin
                 lr_en = 0;
                 lr_reset = 1;
                 current_learning_rate = lr_out;
+                get_LR_en = 0;
                 smooth_en = 1;
             end
         end        
@@ -355,9 +361,10 @@ module gsom
     
     always @(posedge clk) begin
         if (next_t1_en) begin
-            if (t1 < TRAIN_ROWS) begin
+            if (t1 < TRAIN_ROWS-1) begin
                 t1 = t1 + 1;   
-                dist_enable = 1;  
+                $display("t1", t1);
+                dist_enable = 1;
             end else begin
                 next_iteration_en = 1;
             end
@@ -413,15 +420,17 @@ module gsom
         .is_done(comp_done)
     );
     
+    integer node_count_i;
     always @(posedge clk) begin
         if (dist_enable) begin
+            $display("dist_enable");
             distance_X=trainX[t1];
             distance_reset=0;
             distance_en=1;
             if (distance_done == {MAX_NODE_SIZE{1'b1}}) begin
                 distance_en = 0;
                 distance_reset = 1;
-                i = 0;
+                node_count_i = 0;
                 min_distance_next_index = 0;
                 min_distance = p_inf;
                 dist_enable = 0;
@@ -430,10 +439,13 @@ module gsom
         end
     end
     
+    
+    
     always @(posedge clk) begin
         if (min_distance_en) begin
+            $display("min_distance_en");
             comp_in_1 = min_distance;
-            comp_in_2 = distance_out[i];
+            comp_in_2 = distance_out[node_count_i];
             comp_reset = 0;
             comp_en = 1;
             
@@ -442,21 +454,22 @@ module gsom
                 comp_reset = 1;
                 
                 if (comp_out==0) begin
-                    minimum_distance_indices[min_distance_next_index][1] = node_coords[i][1];
-                    minimum_distance_indices[min_distance_next_index][0] = node_coords[i][0];
-                    minimum_distance_1D_indices[min_distance_next_index] = i;
+                    minimum_distance_indices[min_distance_next_index][1] = node_coords[node_count_i][1];
+                    minimum_distance_indices[min_distance_next_index][0] = node_coords[node_count_i][0];
+                    minimum_distance_1D_indices[min_distance_next_index] = node_count_i;
                     min_distance_next_index = min_distance_next_index + 1;
                 
                 end else if (comp_out==1) begin
-                    min_distance = distance_out[i];
-                    minimum_distance_indices[0][1] = node_coords[i][1];
-                    minimum_distance_indices[0][0] = node_coords[i][0]; 
-                    minimum_distance_1D_indices[0] = i;                   
+                    min_distance = distance_out[node_count_i];
+                    minimum_distance_indices[0][1] = node_coords[node_count_i][1];
+                    minimum_distance_indices[0][0] = node_coords[node_count_i][0]; 
+                    minimum_distance_1D_indices[0] = node_count_i;                   
                     min_distance_next_index = 1;
                 end 
                 
-                i=i+1;
-                if (i>=node_count) begin
+                node_count_i=node_count_i+1;
+                $display("node_count_i", node_count_i);
+                if (node_count_i>=node_count) begin
                     min_distance_en=0;
                     bmu_en=1;
                 end
@@ -468,7 +481,8 @@ module gsom
     reg [LOG2_NODE_SIZE-1:0] rmu;
     
     always @(posedge clk) begin
-        if (bmu_en && !test_mode) begin            
+        if (bmu_en && !test_mode) begin   
+            $display("bmu_en");         
             bmu[1] = minimum_distance_indices[min_distance_next_index-1][1];
             bmu[0] = minimum_distance_indices[min_distance_next_index-1][0];
             rmu = minimum_distance_1D_indices[0];
@@ -500,6 +514,7 @@ module gsom
    
     always @(posedge clk) begin    
         if (init_neigh_search_en) begin
+            $display("init_neigh_search_en"); 
             bmu_x = bmu[1]; bmu_y = bmu[0];  
             bmu_i = bmu_x-radius;            
             bmu_j = bmu_y-radius;
@@ -664,6 +679,7 @@ module gsom
     
     always @(posedge clk) begin
         if (adjust_weights_en) begin
+            $display("adjust_weights_en"); 
             comp_reset = 0;
             comp_en = 1;
             comp_in_1 = node_errors[rmu];
@@ -705,6 +721,7 @@ module gsom
         end
         
         if (spread_weighs_en) begin
+            $display("spread_weighs_en"); 
             node_errors[rmu] = growth_threshold;
             node_errors[rmu][30:23] = growth_threshold[30:23] - 1; // divide by 2 => exp-1
             update_error_en = 1;
@@ -772,7 +789,7 @@ module gsom
     reg signed [LOG2_NODE_SIZE:0] u_idx;
     always @(posedge clk) begin
         if (grow_nodes_en && spreadable_idx[0]) begin
-            
+            $display("grow_nodes_en - 0"); 
             u_idx = is_in_map(upx, upy+1);
             if (u_idx != -1) begin
                 new_node_in_middle_en[0] = 1;
@@ -816,6 +833,7 @@ module gsom
     reg signed [LOG2_NODE_SIZE:0] r_idx;
     always @(posedge clk) begin
         if (grow_nodes_en && spreadable_idx[1]) begin
+            $display("grow_nodes_en - 1"); 
             r_idx = is_in_map(rightx+1, righty);
             if (r_idx != -1) begin
                 new_node_in_middle_en[1] = 1;
@@ -864,6 +882,7 @@ module gsom
     reg signed [LOG2_NODE_SIZE:0] b_idx;
     always @(posedge clk) begin
         if (grow_nodes_en && spreadable_idx[2]) begin
+            $display("grow_nodes_en - 2"); 
             b_idx = is_in_map(bottomx, bottomy-1);
             if (b_idx != -1) begin
                 new_node_in_middle_en[2] = 1;
@@ -906,6 +925,7 @@ module gsom
     reg signed [LOG2_NODE_SIZE:0] l_idx;    
     always @(posedge clk) begin
         if (grow_nodes_en && spreadable_idx[3]) begin
+            $display("grow_nodes_en - 3"); 
             l_idx = is_in_map(upx, upy+1);
             if (l_idx != -1) begin
                 new_node_in_middle_en[3] = 1;
@@ -950,6 +970,7 @@ module gsom
         // insert new node
         for (i=1;i<=4;i=i+1) begin
             if (new_node_in_middle_is_done[i]) begin
+                $display("insert new_node_in_middle_en", i); 
                 new_node_in_middle_en[i] = 0;
                 new_node_in_middle_reset[i] = 1;
                 insert_new_node(bmu[1], bmu[0], new_node_in_middle_weight[DIGIT_DIM*i-1 -:DIGIT_DIM]);

@@ -26,7 +26,7 @@ module gsom_tb();
     initial begin
 //        reset = 0;
 //        en = 1;
-        for (i=0;i<1000_000; i=i+1) begin
+        for (i=0;i<1000_000_000; i=i+1) begin
             clk = ~clk;
             if (completed)
                 $finish;

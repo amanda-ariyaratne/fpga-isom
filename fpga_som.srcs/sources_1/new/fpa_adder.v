@@ -36,7 +36,6 @@ assign is_done = done;
 assign num_out = summation;
 
 always @(posedge reset) begin
-    $display("add_reset");
     done = 0;
     init = 1;
     normalize = 0;  
@@ -45,7 +44,6 @@ end
 
 always @(posedge clk) begin
     if (en && init) begin 
-        $display("add_en");
         // compare exponents
         summation=0;
         if (num1[30:23] > num2[30:23])
