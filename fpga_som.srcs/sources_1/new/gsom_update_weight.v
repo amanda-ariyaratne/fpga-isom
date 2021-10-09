@@ -11,15 +11,12 @@ module gsom_update_weight
     input wire reset,
     input wire [31:0] weight,
     input wire [31:0] train_row,
-    input wire [31:0] error,
     input wire [31:0] alpha,
     output wire [31:0] updated_weight,
-    output wire [31:0] updated_error,
     output wire is_done    
 );
 
 reg [31:0] out;
-reg [31:0] error_out;
 
 reg en_1=1;
 reg en_2=0;
@@ -27,13 +24,6 @@ reg en_3=0;
 reg en_4=0;
 
 reg done=0;
-
-reg en_add0=0;
-reg add0_reset;
-reg [31:0] add0_in_1;
-reg [31:0] add0_in_2;
-wire [31:0] add0_out;
-wire add0_done;
 
 reg en_add=0;
 reg add_reset;
@@ -49,21 +39,8 @@ reg [31:0] mul_in_2;
 wire [31:0] mul_out;
 wire mul_done;
 
-
-
 assign updated_weight = add_out;
-assign updated_error = error_out;
 assign is_done = done;
-
-fpa_adder add0(
-    .clk(clk),
-    .en(en_add0),
-    .reset(add0_reset),
-    .num1(add0_in_1),
-    .num2(add0_in_2),
-    .num_out(add0_out),
-    .is_done(add0_done)
-);
 
 fpa_adder add(
     .clk(clk),
@@ -108,11 +85,6 @@ always @(posedge clk) begin
         en_add=0; // off adder module
         add_reset = 1;
         
-        add0_in_1 = add_out;
-        add0_in_2 = error;
-        add0_reset = 0;
-        en_add0 = 1;
-        
         mul_reset = 0;
         mul_in_1 = add_out;
         mul_in_2 = alpha;
@@ -124,11 +96,7 @@ always @(posedge clk) begin
 end
 
 always @(posedge clk) begin
-    if (en && en_3 && mul_done && add0_done) begin
-        add0_reset = 1;
-        en_add0 = 0;
-        error_out = add0_out;
-        
+    if (en && en_3 && mul_done) begin
         en_mul=0; // off multi module
         mul_reset = 1;
         

@@ -350,7 +350,6 @@ module gsom
             next_t1_en = 1;
         end
     end   
-
     
     always @(posedge clk) begin
         if (next_t1_en) begin
@@ -358,7 +357,7 @@ module gsom
                 t1 = t1 + 1;   
                 $display("t1", t1, "    node_count", node_count);
                 
-//                if (t1==5) 
+//                if (t1==1) 
 //                    $finish;
                 dist_enable = 1;
             end else begin
@@ -368,10 +367,8 @@ module gsom
         end
     end
     
-
-    
     //////////////////******************************Find BMU******************************/////////////////////////////////
-    reg [DIGIT_DIM-1:0] min_distance;   
+    reg [DIGIT_DIM-1:0] min_distance;
     reg signed [LOG2_ROWS:0] minimum_distance_indices [MAX_NODE_SIZE-1:0][1:0];
     reg [LOG2_NODE_SIZE-1:0] minimum_distance_1D_indices [MAX_NODE_SIZE:0];
     reg [LOG2_NODE_SIZE-1:0] min_distance_next_index = 0;
@@ -423,7 +420,6 @@ module gsom
             distance_reset=0;
             distance_en=1;
             if (distance_done == {MAX_NODE_SIZE{1'b1}}) begin
-                if (t1 == 4) begin $display("distance_done"); end
                 distance_en = 0;
                 distance_reset = 1;
                 node_count_i = 0;
@@ -466,7 +462,7 @@ module gsom
                 if (node_count_i>=node_count) begin
                     min_distance_en=0;
                     bmu_en=1;
-                    if (t1 == 4) begin $display("min_distance_found"); end
+                    $display("min_distance_found");
                 end
             end
         end
@@ -523,9 +519,7 @@ module gsom
     reg [DIGIT_DIM*DIM-1:0] update_in_1;
     reg [DIGIT_DIM*DIM-1:0] update_in_2;
     reg [DIGIT_DIM-1:0]  update_learning_rate;
-    reg [DIGIT_DIM*DIM-1:0] update_error_in;
     wire [DIGIT_DIM*DIM-1:0] update_out;
-    wire [DIGIT_DIM*DIM-1:0] update_error_out;
     wire [DIM-1:0] update_done;
     
     reg update_neighbour_en=0;
@@ -537,6 +531,23 @@ module gsom
     wire [DIGIT_DIM*DIM-1:0] update_neighbour_out;
     wire [DIM-1:0] update_neighbour_done;
     
+    reg node_error_add_en=0;
+    reg node_error_add_reset;
+    reg [31:0] node_error_add_in_1;
+    reg [31:0] node_error_add_in_2;
+    wire [31:0] node_error_add_out;
+    wire node_error_add_done;
+    
+    fpa_adder node_error_adder(
+        .clk(clk),
+        .en(node_error_add_en),
+        .reset(node_error_add_reset),
+        .num1(node_error_add_in_1),
+        .num2(node_error_add_in_2),
+        .num_out(node_error_add_out),
+        .is_done(node_error_add_done)
+    );
+    
     genvar update_i;
     generate
         for (update_i=1; update_i<=DIM; update_i=update_i+1) begin
@@ -547,9 +558,7 @@ module gsom
                 .weight(update_in_1[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .train_row(update_in_2[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .alpha(update_learning_rate),
-                .error(update_error_in[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .updated_weight(update_out[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
-                .updated_error(update_error_out[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .is_done(update_done[update_i-1])
             );
             
@@ -572,13 +581,21 @@ module gsom
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));   
             if (man_dist == 0) begin
-                if (t1 == 4) begin $display("bmu_weight_update"); end
+                $display("bmu_weight_update");
                 update_in_1 = node_list[rmu];
                 update_in_2 = trainX[t1];
                 update_learning_rate = current_learning_rate;
                 update_en=1; 
-                update_reset=0;             
+                update_reset=0; 
+                
+                // node error adder  
+                node_error_add_in_1 = node_errors[rmu];
+                node_error_add_in_2 = min_distance;
+                node_error_add_reset = 0;
+                node_error_add_en = 1;  
+
             end else if (man_dist <= radius) begin
+                $display("neighbour_weight_update");
                 update_neighbour_in_1 = node_list[rmu];
                 update_neighbour_in_2 = node_list[rmu_i];
                 update_neighbour_learning_rate = current_learning_rate;
@@ -987,11 +1004,15 @@ module gsom
     
     always @(posedge clk) begin
         if ((update_done == {DIM{1'b1}}) || (update_neighbour_done == {DIM{1'b1}}) || not_man_dist_en) begin
-            if (update_done == {DIM{1'b1}}) begin
-                node_list[rmu] = update_out;
+            if (update_done == {DIM{1'b1}} && node_error_add_done) begin
+                $display("Done");
+                node_error_add_en = 0;
+                node_error_add_reset = 1;
+                node_errors[rmu] = node_error_add_out;
+                
                 update_en=0;
                 update_reset=1;
-                node_errors[rmu] = update_error_out;
+                node_list[rmu] = update_out;
                 if (growing_iter_en)
                     adjust_weights_en = 1;
             end 
