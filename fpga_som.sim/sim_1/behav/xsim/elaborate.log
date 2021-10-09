@@ -4,14 +4,14 @@ Running: /opt/Xilinx/Vivado/2020.2/bin/unwrapped/lnx64.o/xelab -wto c97a37bdf686
 Using 8 slave threads.
 Starting static elaboration
 Pass Through NonSizing Optimizer
-WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 14 for port 'index' [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v:390]
-WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'winner' [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v:749]
-WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'node_next' [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v:750]
-WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'weight' [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v:751]
-WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'winner' [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v:768]
-WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'node_next' [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v:769]
-WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'weight' [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v:770]
-WARNING: [VRFC 10-3091] actual bit length 1 differs from formal bit length 32 for port 'num2' [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom.v:663]
+WARNING: [VRFC 10-3091] actual bit length 32 differs from formal bit length 14 for port 'index' [/home/aari/Projects/Vivado/fpga-som/fpga_som.srcs/sources_1/new/gsom.v:395]
+WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'winner' [/home/aari/Projects/Vivado/fpga-som/fpga_som.srcs/sources_1/new/gsom.v:751]
+WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'node_next' [/home/aari/Projects/Vivado/fpga-som/fpga_som.srcs/sources_1/new/gsom.v:752]
+WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'weight' [/home/aari/Projects/Vivado/fpga-som/fpga_som.srcs/sources_1/new/gsom.v:753]
+WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'winner' [/home/aari/Projects/Vivado/fpga-som/fpga_som.srcs/sources_1/new/gsom.v:770]
+WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'node_next' [/home/aari/Projects/Vivado/fpga-som/fpga_som.srcs/sources_1/new/gsom.v:771]
+WARNING: [VRFC 10-3091] actual bit length 64 differs from formal bit length 32 for port 'weight' [/home/aari/Projects/Vivado/fpga-som/fpga_som.srcs/sources_1/new/gsom.v:772]
+WARNING: [VRFC 10-3091] actual bit length 1 differs from formal bit length 32 for port 'num2' [/home/aari/Projects/Vivado/fpga-som/fpga_som.srcs/sources_1/new/gsom.v:668]
 Completed static elaboration
 Starting simulation data flow analysis
 Completed simulation data flow analysis
