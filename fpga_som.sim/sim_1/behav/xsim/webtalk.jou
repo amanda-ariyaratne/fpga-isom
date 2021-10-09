@@ -2,8 +2,8 @@
 # Webtalk v2020.2 (64-bit)
 # SW Build 3064766 on Wed Nov 18 09:12:47 MST 2020
 # IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
-# Start of session at: Fri Oct  8 08:19:41 2021
-# Process ID: 6592
+# Start of session at: Sat Oct  9 10:55:26 2021
+# Process ID: 44372
 # Current directory: /home/aari/Projects/Vivado/fpga-som/fpga_som.sim/sim_1/behav/xsim
 # Command line: wbtcv -mode batch -source /home/aari/Projects/Vivado/fpga-som/fpga_som.sim/sim_1/behav/xsim/xsim.dir/gsom_tb_behav/webtalk/xsim_webtalk.tcl -notrace
 # Log file: /home/aari/Projects/Vivado/fpga-som/fpga_som.sim/sim_1/behav/xsim/webtalk.log

@@ -4,7 +4,7 @@ module gsom_update_neighbour
 #(
     parameter DIM=4,
     parameter DIGIT_DIM=32,
-    parameter LOG2_NODE_SIZE = 7
+    parameter LOG2_NODE_SIZE = 14
 )
 (
     input wire clk,

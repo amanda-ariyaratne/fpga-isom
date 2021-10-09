@@ -15,7 +15,7 @@ module gsom
         parameter LOG2_ROWS = 7,         
         parameter LOG2_COLS = 7,
 
-        parameter MAX_NODE_SIZE = 100,
+        parameter MAX_NODE_SIZE = 500,
         parameter LOG2_NODE_SIZE = 14,
         
         parameter GROWING_ITERATIONS = 100,
@@ -32,17 +32,17 @@ module gsom
         parameter LOG2_NUM_CLASSES = 2,
         
         // model parameters
-        parameter spread_factor = 32'h3F000000, //0.5
-        parameter spread_factor_logval = 32'hBF317218, // BE9A209B = -0.30102999566
+        parameter spread_factor = 32'h3E99999A, //0.3
+        parameter spread_factor_logval = 32'hBF9A1BC8, // BE9A209B = -1.20397280433
         
         parameter dimensions_ieee754 = 32'h40800000, // 4
-        parameter initial_learning_rate=32'h3F666666, // 0.9
+        parameter initial_learning_rate=32'h3E99999A, // 0.3
         parameter smooth_learning_factor= 32'h3F4CCCCD, //0.8
         parameter max_radius=4,
         parameter FD=32'h3DCCCCCD, //0.1
         parameter r=32'h40733333, //3.8
-        parameter alpha=32'h3F333333, //0.7
-        parameter initial_node_size=30000
+        parameter alpha=32'h3F666666, //0.9
+        parameter initial_node_size=10000
 
     )(
         input wire clk
@@ -262,8 +262,8 @@ module gsom
                 iteration = iteration + 1;
                 $display("iteration", iteration);
                 
-                if (iteration==5)
-                    $finish;
+//                if (iteration==5)
+//                    $finish;
                 // neighbourhood                
                 if (iteration <= delta_growing_iter) begin
                     radius = 4;
@@ -523,6 +523,7 @@ module gsom
     reg [DIGIT_DIM*DIM-1:0] update_in_1;
     reg [DIGIT_DIM*DIM-1:0] update_in_2;
     reg [DIGIT_DIM-1:0]  update_learning_rate;
+    reg [DIGIT_DIM*DIM-1:0] update_error_in;
     wire [DIGIT_DIM*DIM-1:0] update_out;
     wire [DIGIT_DIM*DIM-1:0] update_error_out;
     wire [DIM-1:0] update_done;
@@ -546,8 +547,9 @@ module gsom
                 .weight(update_in_1[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .train_row(update_in_2[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .alpha(update_learning_rate),
+                .error(update_error_in[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .updated_weight(update_out[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
-                .error(update_error_out[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
+                .updated_error(update_error_out[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .is_done(update_done[update_i-1])
             );
             
@@ -989,7 +991,7 @@ module gsom
                 node_list[rmu] = update_out;
                 update_en=0;
                 update_reset=1;
-                node_errors[rmu] = node_errors[rmu] + update_error_out;
+                node_errors[rmu] = update_error_out;
                 if (growing_iter_en)
                     adjust_weights_en = 1;
             end 
