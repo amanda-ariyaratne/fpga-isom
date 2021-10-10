@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-
+// outputs maximum
 // 0-> equal, 1->1, 2->2
 module fpa_comparator
 (
