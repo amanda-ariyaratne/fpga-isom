@@ -12,15 +12,12 @@ module fpa_comparator
     output wire is_done
 );
 
-reg [31:0] n1;
-reg [31:0] n2;
 reg [23:0] m1;
 reg [23:0] m2;
 reg signed [8:0] e1;
 reg signed [8:0] e2;
 reg sign1;
 reg sign2;
-reg [31:0] out;
 
 reg [1:0] max = 0;
 reg done=0;

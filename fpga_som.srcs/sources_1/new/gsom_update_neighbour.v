@@ -92,7 +92,7 @@ always @(posedge clk) begin
         add_reset = 0;
         add_in_1 = weight;
         add_in_2 = neighbour;
-        add_in_2[31] = 1; // indicate subtraction
+        add_in_2[31] = ~add_in_2[31]; // indicate subtraction
         en_add = 1; // on the adder module
                 
         en_1=0; // off en_1 block

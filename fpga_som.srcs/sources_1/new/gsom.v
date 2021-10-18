@@ -39,7 +39,7 @@ module gsom
         parameter initial_learning_rate=32'h3E99999A, // 0.3
         parameter smooth_learning_factor= 32'h3F4CCCCD, //0.8
         parameter max_radius=4,
-        parameter FD=32'h3DCCCCCD, //0.1
+        parameter FD=32'h3F8CCCCD, //1.1
         parameter r=32'h40733333, //3.8
         parameter alpha=32'h3F666666, //0.9
         parameter initial_node_size=10000
@@ -115,7 +115,7 @@ module gsom
     
     reg [3:0] spreadable;
     reg signed [LOG2_NODE_SIZE:0] spreadable_idx [3:0];
-    reg [3:0] grow_done;
+    reg [3:0] grow_done=0;
     
     reg [DIGIT_DIM-1:0] min_distance;
     reg signed [LOG2_ROWS:0] minimum_distance_indices [MAX_NODE_SIZE-1:0][1:0];
@@ -344,7 +344,7 @@ module gsom
                 .en(update_error_en),
                 .reset(update_error_reset),
                 .num1(node_errors[spreadable_idx[error_i]]),
-                .num2(fd),
+                .num2(FD),
                 .num_out(updated_error[error_i]),
                 .is_done(update_error_done[error_i])
             );
@@ -409,21 +409,31 @@ module gsom
             x_y_signs[0] = x[LOG2_ROWS];
             x_y_signs[1] = y[LOG2_COLS];
             
-            if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*1-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs[0]==0) && (x_y_signs[1]==0)) begin
+//            if (t1==9 && bmu_i==bmu[1] && bmu_j==bmu[0]) $display("x_y_signs - %d, 0 - %d, 1 - %d, -1 - %d, 2 - %d", 
+//                x_y_signs,
+//                map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*1-1 -:(LOG2_NODE_SIZE+1)],
+//                map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)],
+//                map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)],
+//                map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*4-1 -:(LOG2_NODE_SIZE+1)]
+//            );
+            
+            if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*1-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs==0)) begin
                 is_in_map = map[abs_x][abs_y][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
                 
-            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs[0]==0) && (x_y_signs[1]==1)) begin
+            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs==1)) begin
                 is_in_map = map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)];
                 
-            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs[0]==1) && (x_y_signs[1]==0)) begin
+            end else if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs==2)) begin
                 is_in_map = map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)];
                 
-            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs[0]==1) && (x_y_signs[1]==1)) begin
+            end else if ((map[abs_x][abs_y][LOG2_NODE_SIZE*4-1 -:LOG2_NODE_SIZE] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs==3)) begin
                 is_in_map = map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*4-1 -:(LOG2_NODE_SIZE+1)];
                 
             end else begin
                 is_in_map = -1;
             end
+            
+//            if (t1==39 && bmu_i==bmu[1] && bmu_j==bmu[0]) $display("is_in_map %d", is_in_map);
         end
     endfunction
     
@@ -449,7 +459,7 @@ module gsom
             node_coords[node_count][1] = x;
             node_coords[node_count][0] = y;
             node_count = node_count + 1;  
-            $display("%d", map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*(x_y_signs+1)-1 -:(LOG2_NODE_SIZE+1)]);
+            node_count_adder_en=1;
         end
     endtask
 
@@ -523,7 +533,8 @@ module gsom
         end
         if (square && !mul_is_done) begin
             mul_num1 = mul_num_out;
-            mul_num2 = 32'h3F800000;
+            //mul_num2 = 32'h3F800000; //1
+            mul_num2 = mul_num_out; //1
             mul_en = 1;
             mul_reset = 0;
         end
@@ -836,7 +847,6 @@ module gsom
                         nb_search_en = 0;
                         not_man_dist_en = 1;
                     end
-                    //$display("check %d - %d %d next - %d %d %d", rmu_i, bmu_i, bmu_j, nb_search_en , !update_en , !update_neighbour_en);
                     check_valid_idx = 0;
                 end
             end
@@ -861,29 +871,32 @@ module gsom
                     bottomx = bmu_x;    bottomy = bmu_y-1;
                     
                     spreadable_idx[0] = is_in_map(upx, upy);
-                    spreadable[0] = spreadable_idx[0]!=-1 ? 1 : 0;
+                    spreadable[0] = spreadable_idx[0]==-1 ? 0 : 1;
                     
                     spreadable_idx[1] = is_in_map(rightx, righty);
-                    spreadable[1] = spreadable_idx[1]!=-1 ? 1 : 0;
+                    spreadable[1] = spreadable_idx[1]==-1 ? 0 : 1;
                     
                     spreadable_idx[2] = is_in_map(bottomx, bottomy);
-                    spreadable[2] = spreadable_idx[2]!=-1 ? 1 : 0;
+                    spreadable[2] = spreadable_idx[2]==-1 ? 0 : 1;
                     
                     spreadable_idx[3] = is_in_map(leftx, lefty);
-                    spreadable[3] = spreadable_idx[3]!=-1 ? 1 : 0;
+                    spreadable[3] = spreadable_idx[3]==-1 ? 0 : 1;
                         
                     if (spreadable == {4{1'b1}}) begin
+                        $display("spreadable");
                         spread_weighs_en=1;
-                    end else begin         
+                    end else begin      
+                        $display("grow_nodes_en");   
                         grow_nodes_en=1;
-                        grow_done = 0;
+                        grow_done = spreadable;
                     end
                     
                 end else begin
                     not_man_dist_en = 1;
+                    $display("GT is bigger");   
                 end
                 adjust_weights_en = 0;
-            end
+            end 
         end
         
         if (spread_weighs_en) begin
@@ -898,7 +911,14 @@ module gsom
                 node_errors[spreadable_idx[0]] = updated_error[0];
                 node_errors[spreadable_idx[1]] = updated_error[1];
                 node_errors[spreadable_idx[2]] = updated_error[2];
-                node_errors[spreadable_idx[3]] = updated_error[3];      
+                node_errors[spreadable_idx[3]] = updated_error[3]; 
+                
+                $display("Spreaded errors %d %d %d %d", 
+                    updated_error[0],
+                    updated_error[1],
+                    updated_error[2],
+                    updated_error[3]
+                );  
                 
                 not_man_dist_en = 1;   
                 spread_weighs_en = 0;   
@@ -908,13 +928,12 @@ module gsom
 
     ///////////////////////////////////////////**************************grow_up**************************/////////////////////////////////////////////////////
     always @(posedge clk) begin
-        if (grow_nodes_en && spreadable_idx[0]==-1) begin
-            $display("up");
-            new_node_idx_x[0] = bmu[1] + 0;
-            new_node_idx_y[0] = bmu[0] - 1;
+        if (grow_nodes_en && !spreadable[0]) begin
+            $display("up %d", spreadable_idx[0]);
+            new_node_idx_x[0] = upx;
+            new_node_idx_y[0] = upy;
             u_idx = is_in_map(upx, upy+1);
             if (u_idx != -1) begin
-                $display("up 1");
                 new_node_in_middle_en[0] = 1;
                 new_node_in_middle_reset[0] = 0;
                 new_node_in_middle_winner[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM] = node_list[rmu];
@@ -923,7 +942,6 @@ module gsom
             end else begin
                 u_idx = is_in_map(bmu[1], bmu[0]-1);
                 if (u_idx != -1) begin
-                    $display("up 2");
                     new_node_on_one_side_en[0] = 1;
                     new_node_on_one_side_reset[0] = 0;
                     new_node_on_one_side_winner[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM] = node_list[rmu];
@@ -932,7 +950,6 @@ module gsom
                 end else begin
                     u_idx = is_in_map(bmu[1]+1, bmu[0]);
                     if (u_idx != -1) begin
-                        $display("up 3");
                         new_node_on_one_side_en[0] = 1;
                         new_node_on_one_side_reset[0] = 0;
                         new_node_on_one_side_winner[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM] = node_list[rmu];
@@ -941,7 +958,6 @@ module gsom
                     end else begin
                         u_idx = is_in_map(bmu[1]-1, bmu[0]);
                         if (u_idx != -1) begin
-                            $display("up 4");
                             new_node_on_one_side_en[0] = 1;
                             new_node_on_one_side_reset[0] = 0;
                             new_node_on_one_side_winner[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM] = node_list[rmu];
@@ -949,19 +965,17 @@ module gsom
                         end 
                     end
                 end
-            end
-            
-            spreadable_idx[0] = 0;
-        end else if (grow_nodes_en)
-            grow_done[0] = 1;
+            end            
+            spreadable[0] = 1;
+        end 
     end
     
     ///////////////////////////////////////////**************************grow_right**************************/////////////////////////////////////////////////////
     always @(posedge clk) begin
-        if (grow_nodes_en && spreadable_idx[1]==-1) begin
-            $display("right");
-            new_node_idx_x[1] = bmu[1] + 1;
-            new_node_idx_y[1] = bmu[0] + 0;
+        if (grow_nodes_en && !spreadable[1]) begin
+            $display("right %d", spreadable_idx[0]);
+            new_node_idx_x[1] = rightx;
+            new_node_idx_y[1] = righty;
             r_idx = is_in_map(rightx+1, righty);
             if (r_idx != -1) begin
                 new_node_in_middle_en[1] = 1;
@@ -997,17 +1011,17 @@ module gsom
                     end
                 end
             end
-            spreadable_idx[1] = 0;
-        end else if (grow_nodes_en)
-            grow_done[1] = 1;
+            spreadable[1] = 1;
+        end 
     end
     
     ///////////////////////////////////////////**************************grow_bottom**************************/////////////////////////////////////////////////////
     always @(posedge clk) begin
-        if (grow_nodes_en && spreadable_idx[2]==-1) begin
-            $display("bottom");
-            new_node_idx_x[2] = bmu[1] + 0;
-            new_node_idx_y[2] = bmu[0] + 1;
+        if (grow_nodes_en && !spreadable[2]) begin
+            $display("bottom %d", spreadable_idx[0]);
+            
+            new_node_idx_x[2] = bottomx;
+            new_node_idx_y[2] = bottomy;
             b_idx = is_in_map(bottomx, bottomy-1);
             if (b_idx != -1) begin
                 new_node_in_middle_en[2] = 1;
@@ -1042,47 +1056,42 @@ module gsom
                     end
                 end
             end
-            spreadable_idx[2] = 0;
-        end else if (grow_nodes_en)
-            grow_done[2] = 1;
+            spreadable[2] = 1;
+        end 
     end
     
     ///////////////////////////////////////////**************************grow_left**************************/////////////////////////////////////////////////////
     always @(posedge clk) begin
-        if (grow_nodes_en && spreadable_idx[3]==-1) begin
-            $display("left");
-            new_node_idx_x[3] = bmu[1] - 1;
-            new_node_idx_y[3] = bmu[0] + 0;
+        if (grow_nodes_en && !spreadable[3]) begin
+            $display("left %d", spreadable_idx[0]);
+            new_node_idx_x[3] = leftx;
+            new_node_idx_y[3] = lefty;
             l_idx = is_in_map(leftx-1, lefty);
             if (l_idx != -1) begin
-                $display("left 1");
                 new_node_in_middle_en[3] = 1;
                 new_node_in_middle_reset[3] = 0;
                 new_node_in_middle_winner[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM] = node_list[rmu];
                 new_node_in_middle_next_node[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM] = node_list[l_idx];
                 
             end else begin
-                l_idx = is_in_map(bmu[1], bmu[0]-1);
+                l_idx = is_in_map(bmu[1]+1, bmu[0]);
                 if (l_idx != -1) begin
-                    $display("left 2");
                     new_node_on_one_side_en[3] = 1;
                     new_node_on_one_side_reset[3] = 0;
                     new_node_on_one_side_winner[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM] = node_list[rmu];
                     new_node_on_one_side_next_node[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM] = node_list[l_idx];
                     
                 end else begin
-                    l_idx = is_in_map(bmu[1]+1, bmu[0]);
+                    l_idx = is_in_map(bmu[1], bmu[0]+1);
                     if (l_idx != -1) begin
-                        $display("left 3");
                         new_node_on_one_side_en[3] = 1;
                         new_node_on_one_side_reset[3] = 0;
                         new_node_on_one_side_winner[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM] = node_list[rmu];
                         new_node_on_one_side_next_node[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM] = node_list[l_idx];
                         
                     end else begin
-                        l_idx = is_in_map(bmu[1]-1, bmu[0]);
+                        l_idx = is_in_map(bmu[1], bmu[0]-1);
                         if (l_idx != -1) begin
-                            $display("left 4");
                             new_node_on_one_side_en[3] = 1;
                             new_node_on_one_side_reset[3] = 0;
                             new_node_on_one_side_winner[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM] = node_list[rmu];
@@ -1093,9 +1102,8 @@ module gsom
                     end
                 end
             end
-            spreadable_idx[3] = 0;
-        end else if (grow_nodes_en)
-            grow_done[3] = 1;
+            spreadable[3] = 1;
+        end
     end
     
     ///////////////////////////////////////////**************************inserted_nodes**************************/////////////////////////////////////////////////////
@@ -1113,8 +1121,8 @@ module gsom
                 new_node_on_one_side_en[i-1] = 0;
                 new_node_on_one_side_reset[i-1] = 1;
                 insert_new_node(new_node_idx_x[i-1], new_node_idx_y[i-1], new_node_on_one_side_weight[DIGIT_DIM*DIM*i-1 -:DIGIT_DIM*DIM]);
-                $display("inserted on_one_side %d %d %d %b %b", i-1, new_node_idx_x[i-1], new_node_idx_y[i-1], new_node_idx_x[i-1], new_node_idx_y[i-1]);
                 grow_done[i-1] = 1;
+                $display("inserted on_one_side %d %d %d %b %b", i-1, new_node_idx_x[i-1], new_node_idx_y[i-1], new_node_idx_x[i-1], new_node_idx_y[i-1]);
             end
         end
         if (grow_done==4'b1111 && !node_count_adder_en) begin
@@ -1127,8 +1135,7 @@ module gsom
     always @(posedge clk) begin
         if (node_count_adder_en) begin
             nca_num1 = node_count_ieee754;
-            nca_num2 = node_count_ieee754;
-            //nca_num2 = 32'h3F800000;
+            nca_num2 = 32'h3F800000; // 1
             nca_en = 1;
             nca_reset = 0;
             if (nca_is_done) begin
@@ -1140,20 +1147,20 @@ module gsom
         end
     end
     ///////////////////////////////////////////**************************write_weights**************************/////////////////////////////////////////////////////
-    integer fd;    
+    integer file_dir;    
     always @(posedge clk) begin
         if (write_en) begin
-            fd = $fopen("/home/aari/Projects/Vivado/fpga-som/gsom/weight_out.data", "w");
+            file_dir = $fopen("/home/mad/Documents/Projects/fpga-isom/gsom/weight_out.data", "w");
             i=0; j=0; k=0;
             for (i=0; i<=node_count-1; i=i+1) begin
-                for (j=0; j<=DIM*DIGIT_DIM-1; j=j+1) begin
-                    $fwriteb(fd, node_list[i][j]);
+                for (j=DIM*DIGIT_DIM-1; j>=0; j=j-1) begin
+                    $fwriteb(file_dir, node_list[i][j]);
                 end
-                $fwrite(fd, "\n");
-                $display("Written %d", i);
+                $fwrite(file_dir, "\n");
+                $display("Written %d %d", i, node_list[i]);
             end
             
-            #10 $fclose(fd);            
+            #10 $fclose(file_dir);            
             is_completed = 1;   
             $finish;
         end
