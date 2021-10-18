@@ -244,7 +244,7 @@ module gsom
                 .weight(node_list[euc_i]),
                 .trainX(distance_X),
                 .node_count(node_count),
-                .index(euc_i),
+                .index(euc_i[LOG2_NODE_SIZE-1:0]),
                 .num_out(distance_out[euc_i]),
                 .is_done(distance_done[euc_i])
             );
@@ -303,6 +303,7 @@ module gsom
                 .clk(clk),
                 .en(update_neighbour_en),
                 .reset(update_neighbour_reset),
+                .idx(update_i),
                 .weight(update_neighbour_in_1[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .neighbour(update_neighbour_in_2[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .learning_rate(update_neighbour_learning_rate),
@@ -631,7 +632,7 @@ module gsom
         if (next_iteration_en && smoothing_iter_en) begin
             if (iteration < SMOOTHING_ITERATIONS) begin
                 iteration = iteration + 1;
-                $display("iteration", iteration);
+//                $display("iteration", iteration);
                 // neighbourhood                
                 if (iteration <= delta_smoothing_iter) begin
                     radius = 4;                
@@ -765,7 +766,7 @@ module gsom
             bmu_j = bmu_y-radius;
             init_neigh_search_en=0;
             nb_search_en=1;
-            $display("bmu %d %d", bmu[1], bmu[0]);
+//            $display("bmu %d %d", bmu[1], bmu[0]);
         end
     end
     
@@ -893,7 +894,7 @@ module gsom
                     
                 end else begin
                     not_man_dist_en = 1;
-                    $display("GT is bigger");   
+//                    $display("GT is bigger");   
                 end
                 adjust_weights_en = 0;
             end 
@@ -904,7 +905,12 @@ module gsom
             node_errors[rmu][30:23] = growth_threshold[30:23] - 1; // divide by 2 => exp-1
             update_error_en = 1;
             update_error_reset = 0;
-            
+//            $display("node_errors %h %h %h %h", 
+//                        node_errors[spreadable_idx[0]], 
+//                        node_errors[spreadable_idx[1]], 
+//                        node_errors[spreadable_idx[2]], 
+//                        node_errors[spreadable_idx[3]]
+//                    );
             if (update_error_done == {4{1'b1}}) begin
                 update_error_en = 0;
                 update_error_reset = 1;
@@ -913,12 +919,12 @@ module gsom
                 node_errors[spreadable_idx[2]] = updated_error[2];
                 node_errors[spreadable_idx[3]] = updated_error[3]; 
                 
-                $display("Spreaded errors %d %d %d %d", 
-                    updated_error[0],
-                    updated_error[1],
-                    updated_error[2],
-                    updated_error[3]
-                );  
+//                $display("Spreaded errors %h %h %h %h", 
+//                    updated_error[0],
+//                    updated_error[1],
+//                    updated_error[2],
+//                    updated_error[3]
+//                );  
                 
                 not_man_dist_en = 1;   
                 spread_weighs_en = 0;   
@@ -929,7 +935,7 @@ module gsom
     ///////////////////////////////////////////**************************grow_up**************************/////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (grow_nodes_en && !spreadable[0]) begin
-            $display("up %d", spreadable_idx[0]);
+            $display("new up node %d %d", upx, upy);
             new_node_idx_x[0] = upx;
             new_node_idx_y[0] = upy;
             u_idx = is_in_map(upx, upy+1);
@@ -973,7 +979,7 @@ module gsom
     ///////////////////////////////////////////**************************grow_right**************************/////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (grow_nodes_en && !spreadable[1]) begin
-            $display("right %d", spreadable_idx[0]);
+            $display("new right node %d %d", rightx, righty);
             new_node_idx_x[1] = rightx;
             new_node_idx_y[1] = righty;
             r_idx = is_in_map(rightx+1, righty);
@@ -1018,7 +1024,7 @@ module gsom
     ///////////////////////////////////////////**************************grow_bottom**************************/////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (grow_nodes_en && !spreadable[2]) begin
-            $display("bottom %d", spreadable_idx[0]);
+            $display("new bottom node %d %d", bottomx, bottomy);
             
             new_node_idx_x[2] = bottomx;
             new_node_idx_y[2] = bottomy;
@@ -1063,7 +1069,7 @@ module gsom
     ///////////////////////////////////////////**************************grow_left**************************/////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (grow_nodes_en && !spreadable[3]) begin
-            $display("left %d", spreadable_idx[0]);
+            $display("new left node %d %d", leftx, lefty);
             new_node_idx_x[3] = leftx;
             new_node_idx_y[3] = lefty;
             l_idx = is_in_map(leftx-1, lefty);
