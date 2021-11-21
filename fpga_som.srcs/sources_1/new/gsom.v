@@ -9,13 +9,13 @@ module gsom
         parameter INIT_ROWS = 2,
         parameter INIT_COLS = 2,
         
-        parameter MAX_ROWS = 100,
-        parameter MAX_COLS = 100,
+        parameter MAX_ROWS = 10,
+        parameter MAX_COLS = 10,
         
         parameter LOG2_ROWS = 7,         
         parameter LOG2_COLS = 7,
 
-        parameter MAX_NODE_SIZE = 100,
+        parameter MAX_NODE_SIZE = 10,
         parameter LOG2_NODE_SIZE = 14,
         
         parameter GROWING_ITERATIONS = 100,
@@ -303,7 +303,6 @@ module gsom
                 .clk(clk),
                 .en(update_neighbour_en),
                 .reset(update_neighbour_reset),
-                .idx(update_i),
                 .weight(update_neighbour_in_1[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .neighbour(update_neighbour_in_2[update_i*DIGIT_DIM-1 -:DIGIT_DIM]),
                 .learning_rate(update_neighbour_learning_rate),
@@ -413,7 +412,6 @@ module gsom
             
             x_y_signs[0] = x[LOG2_ROWS];
             x_y_signs[1] = y[LOG2_COLS];
-            $display("1");
 //            if (t1==9 && bmu_i==bmu[1] && bmu_j==bmu[0]) $display("x_y_signs - %d, 0 - %d, 1 - %d, -1 - %d, 2 - %d", 
 //                x_y_signs,
 //                map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*1-1 -:(LOG2_NODE_SIZE+1)],
@@ -455,7 +453,7 @@ module gsom
             x_y_signs=0;
             abs_x = x>0 ? x : -x;
             abs_y = y>0 ? y : -y;
-            $display("2");
+            
             x_y_signs[0] = x[LOG2_ROWS];
             x_y_signs[1] = y[LOG2_COLS];
             
@@ -505,7 +503,6 @@ module gsom
             node_coords[node_count][0] = 0;
             node_coords[node_count][1] = 1;
             node_count = node_count + 1;
-            $display("3");
             
             map[0][0][LOG2_NODE_SIZE:0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
@@ -943,7 +940,6 @@ module gsom
                 u_idx = is_in_map(bmu[1], bmu[0]-1);
                 if (u_idx != -1) begin
 //                    $display("UP 2");
-                    $display("4");
                     new_node_on_one_side_en[1*DIM-1 -:DIM] = {DIM{1'b1}};
                     new_node_on_one_side_reset[1*DIM-1 -:DIM] = 0;
                     new_node_on_one_side_winner[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM] = node_list[rmu];
@@ -998,7 +994,6 @@ module gsom
                 new_node_in_middle_reset[2*DIM-1 -:DIM] = 0;
                 new_node_in_middle_winner[DIGIT_DIM*DIM*2-1 -:DIGIT_DIM*DIM] = node_list[rmu];
                 new_node_in_middle_next_node[DIGIT_DIM*DIM*2-1 -:DIGIT_DIM*DIM] = node_list[r_idx];
-                $display("5");
             end else begin
                 r_idx = is_in_map(bmu[1]-1, bmu[0]);
                 if (r_idx != -1) begin
@@ -1080,7 +1075,6 @@ module gsom
     always @(posedge clk) begin
         if (grow_nodes_en && !spreadable[3]) begin
 //            $display("new left node %d %d", leftx, lefty);
-            $display("6");
             new_node_idx_x[3] = leftx;
             new_node_idx_y[3] = lefty;
             l_idx = is_in_map(leftx-1, lefty);
@@ -1141,7 +1135,6 @@ module gsom
                 new_node_on_one_side_reset[i*DIM-1 -:DIM] = {DIM{1'b1}};
                 insert_new_node(new_node_idx_x[i-1], new_node_idx_y[i-1], new_node_on_one_side_weight[DIGIT_DIM*DIM*i-1 -:DIGIT_DIM*DIM]);
                 grow_done[i-1] = 1;
-                $display("7");
 //                $display("inserted on_one_side %d %h %h", i-1, new_node_idx_x[i-1], new_node_idx_y[i-1]);
             end
         end

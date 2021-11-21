@@ -17,14 +17,13 @@ module gsom_update_neighbour
     input wire [DIGIT_DIM-1:0] weight,
     input wire [DIGIT_DIM-1:0] neighbour,
     input wire [DIGIT_DIM-1:0] man_dist,
-    input wire [DIGIT_DIM-1:0] idx,
 //    input wire [DIGIT_DIM-1:0] radius,
     input wire [DIGIT_DIM-1:0] learning_rate,
     output wire [DIGIT_DIM-1:0] num_out,
     output wire is_done    
 );
 
-reg [31:0] influence;
+reg [31:0] influence = 0;
 
 reg en_1=1;
 reg en_2=0;
@@ -95,7 +94,7 @@ always @(posedge reset) begin
 end
 
 // calculate influence based on manhattan distance
-always @* begin
+always @(posedge clk) begin
     if (en && en_1) begin
         if (man_dist == 1) begin
             influence = 32'h3F000000; // 0.5
@@ -105,6 +104,8 @@ always @* begin
             influence = 32'h3E000000; // 0.125
         end else if (man_dist == 4) begin
             influence = 32'h3D800000; // 0.0625
+        end else begin
+            influence = 0;
         end
     end
 end
