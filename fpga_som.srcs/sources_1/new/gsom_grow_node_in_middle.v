@@ -2,8 +2,8 @@
 
 module gsom_grow_node_in_middle
 #(
-    DIGIT_DIM=32,
-    LOG2_NODE_COUNT=7
+    parameter DIGIT_DIM=32,
+    parameter LOG2_NODE_COUNT=7
 )
 (
     input clk,
@@ -63,6 +63,7 @@ fpa_comparator get_min(
 
 always @(posedge clk) begin
     if (en && init) begin
+//        $display(" winner %h next %h", winner, node_next);
         add_en=1;
         add_reset=0;
         init=0;
@@ -86,7 +87,7 @@ always @(posedge clk) begin
         if (comp_out_min==2) // 0 is max
             out = 32'h00000000;
             
-        if (comp_in!=out) $display("in_middle Clipped 1 - %d 0 - %d", comp_out_max, comp_out_min);
+//        if (comp_in!=out) $display("in_middle Clipped 1 - %d 0 - %d", comp_out_max, comp_out_min);
     end
 end
 

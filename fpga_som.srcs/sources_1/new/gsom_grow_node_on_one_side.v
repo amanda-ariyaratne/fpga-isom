@@ -2,8 +2,8 @@
 
 module gsom_grow_node_on_one_side
 #(
-    DIGIT_DIM=32,
-    LOG2_NODE_COUNT=7
+    parameter DIGIT_DIM=32,
+    parameter LOG2_NODE_COUNT=7
 )
 (
     input clk,
@@ -65,6 +65,7 @@ fpa_comparator get_min(
 
 always @(posedge clk) begin
     if (en && init) begin
+//        $display(" winner %h next %h", winner, node_next);
         winner_in = winner;
         winner_in[30:23] = winner[30:23]+1; // x2
         node_next_in = node_next;
@@ -91,7 +92,7 @@ always @(posedge clk) begin
         if (comp_out_min==2) // 0 is max
             out = 32'h00000000;
             
-        if (comp_in!=out) $display("on_one_side Clipped 1 - %d 0 - %d", comp_in, out);
+//        if (comp_in!=out) $display("on_one_side Clipped 1 - %d 0 - %d", comp_in, out);
     end
 end
 

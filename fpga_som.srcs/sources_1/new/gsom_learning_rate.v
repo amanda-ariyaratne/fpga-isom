@@ -139,7 +139,7 @@ always @(posedge clk) begin
           -----------
           2^(n/8 + 2)  
         ***************************************/
-        $display("1 %h", add_num_out);
+//        $display("1 %h", add_num_out);
         add_en = 0;
         add_reset = 1;
                 
@@ -155,7 +155,7 @@ always @(posedge clk) begin
     end
     
     if (step_2 && add1_is_done) begin
-        $display("2 %h", add1_num_out);
+//        $display("2 %h", add1_num_out);
         add1_en = 0;
         add1_reset = 1;   
              
@@ -178,8 +178,8 @@ always @(posedge clk) begin
     end
     
     if (step_3 && add_is_done && mul_is_done) begin
-        $display("3 %h", mul_num_out);
-        $display("4 %h", add_num_out);
+//        $display("3 %h", mul_num_out);
+//        $display("4 %h", add_num_out);
         
         add_en = 0;
         add_reset = 1;        
@@ -208,7 +208,7 @@ always @(posedge clk) begin
 //    end
     
     if (step_4 && mul_is_done) begin
-        $display("4 %h", mul_num_out);
+//        $display("4 %h", mul_num_out);
         mul_en = 0;
         mul_reset = 1;
         
