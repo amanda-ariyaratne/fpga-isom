@@ -21,7 +21,7 @@ module isom
         parameter NUM_CLASSES = 3+1,
         parameter LOG2_NUM_CLASSES = 1+1, // log2(NUM_CLASSES)  
         
-        parameter TOTAL_ITERATIONS=20,              
+        parameter TOTAL_ITERATIONS=8,              
         parameter LOG2_TOT_ITERATIONS = 6,
         
         parameter INITIAL_NB_RADIUS = 3,
@@ -44,8 +44,8 @@ module isom
     );
 
     ///////////////////////////////////////////////////////*******************Declare enables***********/////////////////////////////////////
-    
-    reg [1:0] training_en = 0;
+    reg [1:0] variable_init_en=1;
+    reg [1:0] training_en = 1;
     reg [1:0] next_iteration_en=0;
     reg [1:0] next_x_en=0;    
     reg [1:0] dist_enable = 0;
@@ -106,64 +106,28 @@ module isom
     
     ///////////////////////////////////////////////////////*******************Read weight vectors***********/////////////////////////////////////
     initial begin
-        weights_file = $fopen("/home/mad/Documents/fpga-isom/isom/weights.data","r");
-        while (!$feof(weights_file))
-        begin
-            eof_weight = $fscanf(weights_file, "%b\n",rand_v);
-            
-            for(kw=DIM-1;kw>=0;kw=kw-1)
-            begin
-                weights[i][j][kw] = rand_v[(DIGIT_DIM*kw)+1-:DIGIT_DIM];
-            end
-            
-            j = j + 1;
-            if (j == COLS)
-            begin
-                j = 0;
-                i = i + 1;
-            end
-        end
-        $fclose(weights_file);
+        $readmemb("isom_train_x.mem", trainX);
     end
     
-    ///////////////////////////////////////////////////////*******************Read train vectors***********/////////////////////////////////////
     initial begin
-        trains_file = $fopen("/home/mad/Documents/fpga-isom/isom/train.data","r");
-        while (!$feof(trains_file))
-            begin        
-            eof_train = $fscanf(trains_file, "%b\n",temp_train_v);
-            
-            for(k1=DIM-1;k1>=0;k1=k1-1)
-            begin
-                trainX[t1][k1] = temp_train_v[(DIGIT_DIM*k1)+1+LOG2_NUM_CLASSES -:DIGIT_DIM];
-            end
-            trainY[t1] = temp_train_v[LOG2_NUM_CLASSES-1:0];
-            t1 = t1 + 1;
-        end
-        $fclose(trains_file);
-        training_en = 1;
+        $readmemb("isom_train_y.mem", trainY);
     end
-
-    ///////////////////////////////////////////////////////*******************Read test vectors***********/////////////////////////////////////
+    
     initial begin
-        test_file = $fopen("/home/mad/Documents/fpga-isom/isom/test.data","r");
-        while (!$feof(test_file)) begin
-            eof_test = $fscanf(test_file, "%b\n",temp_test_v);
-            for(k2=DIM-1;k2>=0;k2=k2-1) begin
-                testX[t2][k2] = temp_test_v[(DIGIT_DIM*k2)+LOG2_NUM_CLASSES+1 -:DIGIT_DIM];
-            end
-                
-            testY[t2] = temp_test_v[LOG2_NUM_CLASSES-1:0];
-            t2 = t2 + 1;
-        end
-        $fclose(test_file);  
+        $readmemb("isom_test_x.mem", testX);
+    end
+    
+    initial begin
+        $readmemb("isom_test_y.mem", testY);
+    end
+    
+    initial begin
+        $readmemb("isom_weights.mem", weights);
     end
     
     ////////////////////*****************************Initialize frequenct list*************//////////////////////////////
-    reg variable_init_en=1;
     always @(posedge clk) begin
-        if (variable_init_en) begin
-        
+        if (variable_init_en) begin        
             for (ii = 0; ii < ROWS; ii = ii + 1) begin
                 for (jj = 0; jj < COLS; jj = jj + 1) begin
                     for (kk = 0; kk < NUM_CLASSES; kk = kk + 1) begin
@@ -560,7 +524,7 @@ module isom
             else
             begin 
                 test_en = 0;
-                write_en = 1;            
+                is_completed = 1;            
             end
         end
     end
@@ -658,24 +622,24 @@ module isom
         end        
     end
     
-    integer fd;    
-    always @(posedge clk) begin
-        if (write_en) begin
-            fd = $fopen("/home/mad/Documents/fpga-isom/isom/weight_out.data", "w");
-            i=0; j=0; k=0;
-            for (i=0; i<=ROWS-1; i=i+1) begin
-                for (j=0; j<=COLS-1; j=j+1) begin
-                    for (k=DIM-1; k>=0; k=k-1) begin                        
-                        $fwriteb(fd, weights[i][j][k]);
-                    end
-                    $fwrite(fd, "\n");
-                end
-            end
+//    integer fd;    
+//    always @(posedge clk) begin
+//        if (write_en) begin
+//            fd = $fopen("/home/mad/Documents/Projects/fpga-isom/isom/weight_out.data", "w");
+//            i=0; j=0; k=0;
+//            for (i=0; i<=ROWS-1; i=i+1) begin
+//                for (j=0; j<=COLS-1; j=j+1) begin
+//                    for (k=DIM-1; k>=0; k=k-1) begin                        
+//                        $fwriteb(fd, weights[i][j][k]);
+//                    end
+//                    $fwrite(fd, "\n");
+//                end
+//            end
             
-            #10 $fclose(fd);            
-            is_completed = 1;   
-        end
-    end
+//            #10 $fclose(fd);            
+//            is_completed = 1;   
+//        end
+//    end
         
     assign prediction = correct_predictions;
     assign completed = is_completed;
