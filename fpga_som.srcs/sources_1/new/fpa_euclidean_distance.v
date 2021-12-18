@@ -2,7 +2,7 @@
 
 module fpa_euclidean_distance
 #(
-    parameter DIM=4,
+    parameter DIM=11,
     parameter DIGIT_DIM=32
 )
 (
@@ -33,21 +33,12 @@ wire [DIM-1:0] dist_sqr_is_done;
 
 
 //////////////////// Get all done to one variable ///////////////////////
-//genvar k;
-//generate
-//    for (k=1; k<=DIM; k=k+1) begin
-//        assign dist_sqr_is_done[k-1] = dist_sqr_done[DIGIT_DIM*k-1];
-//    end
-//endgenerate
-
-assign dist_sqr_is_done[1-1] = dist_sqr_done[DIGIT_DIM*1-1];
-assign dist_sqr_is_done[2-1] = dist_sqr_done[DIGIT_DIM*2-1];
-assign dist_sqr_is_done[3-1] = dist_sqr_done[DIGIT_DIM*3-1];
-assign dist_sqr_is_done[4-1] = dist_sqr_done[DIGIT_DIM*4-1];
-
-//assign dist_sqr_in_1 = weight;
-//assign dist_sqr_in_2 = trainX;
-
+genvar k;
+generate
+    for (k=1; k<=DIM; k=k+1) begin
+        assign dist_sqr_is_done[k-1] = dist_sqr_done[DIGIT_DIM*k-1];
+    end
+endgenerate
 ////////////////////parallel blocks for distance square///////////////////////
 genvar i;
 generate
@@ -111,7 +102,7 @@ always @(posedge clk) begin
     if (add_all_init && !wait_en) begin
         add_all_in_2 = dist_sqr_out[j-1 -:DIGIT_DIM];
         add_all_en = 1;
-        add_all_reset = 0;
+        add_all_reset = 0; 
         wait_en = 1;
     end
 end

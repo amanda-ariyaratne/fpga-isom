@@ -3,7 +3,7 @@
 module csom_tb();
     reg clk = 0;
     reg reset = 0;
-    wire [8:0] prediction;
+    wire [10:0] prediction;
     wire completed;
     
     som uut(

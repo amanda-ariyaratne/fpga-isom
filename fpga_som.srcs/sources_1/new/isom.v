@@ -76,7 +76,7 @@ module isom
     
     ///////////////////////////////////////////////////////*******************File read variables***********/////////////////////////////////////
     
-    reg signed [DIGIT_DIM-1:0] weights [ROWS-1:0][COLS-1:0][DIM-1:0];
+    reg [DIGIT_DIM*DIM-1:0] weights [ROWS-1:0][COLS-1:0];
     reg signed [DIGIT_DIM-1:0] trainX [TRAIN_ROWS-1:0][DIM-1:0];    
     reg signed [DIGIT_DIM-1:0] testX [TEST_ROWS-1:0][DIM-1:0];
     reg [LOG2_NUM_CLASSES-1:0] trainY [TRAIN_ROWS-1:0];
@@ -284,17 +284,13 @@ module isom
                     for (k=0;k<DIM;k=k+1)
                     begin
                         // get distnace
-                        hamming_distance = hamming_distance + (weights[i][j][k]*trainX[t1][k] == 2'b11 ? 2'b01 : 2'b00);
+                        hamming_distance = hamming_distance + (weights[i][j][(k+1)*DIGIT_DIM-1 -:DIGIT_DIM]*trainX[t1][k] == 2'b11 ? 2'b01 : 2'b00);
                         // get zero count
-                        non_zero_count = non_zero_count + (weights[i][j][k] == 2'b00 ? 2'b00 : 2'b01); 
+                        non_zero_count = non_zero_count + (weights[i][j][(k+1)*DIGIT_DIM-1 -:DIGIT_DIM] == 2'b00 ? 2'b00 : 2'b01); 
                         
-                        dot_product = dot_product + weights[i][j][k]*trainX[t1][k];
-                        
-                        // w_l2_norm = w_l2_norm + (weights[i][j][k]*weights[i][j][k]);
+                        dot_product = dot_product + weights[i][j][(k+1)*DIGIT_DIM-1 -:DIGIT_DIM]*trainX[t1][k];
                         
                     end // k
-                    
-//                    distances[i][j] = hamming_distance;
 
                     distances[i][j] = DIM - dot_product;
                     l0_norms[i][j] = non_zero_count;
@@ -391,7 +387,8 @@ module isom
         end
     end
     
-    reg signed [2*DIGIT_DIM:0] temp;
+    reg signed [DIGIT_DIM:0] temp;
+    reg signed [DIGIT_DIM-1:0] signed_weight;
     integer digit;
 
     always @(posedge clk)
@@ -405,14 +402,16 @@ module isom
                 for (digit=0; digit<DIM; digit=digit+1) begin
                    if (random_number_arr[RAND_NUM_BIT_LEN*digit +: RAND_NUM_BIT_LEN] < update_prob) begin                        
                         seed_en = 0;
-                        temp = weights[bmu_i][bmu_j][digit] + trainX[t1][digit];
+                        signed_weight = weights[bmu_i][bmu_j][(digit+1)*DIGIT_DIM-1 -:DIGIT_DIM];
+                                              
+                        temp = signed_weight + trainX[t1][digit];
                         
                         if (temp > k_value) 
-                            weights[bmu_i][bmu_j][digit] = k_value;
+                            weights[bmu_i][bmu_j][(digit+1)*DIGIT_DIM-1 -:DIGIT_DIM] = k_value;
                         else if (temp < -k_value) 
-                            weights[bmu_i][bmu_j][digit] = -k_value;
+                            weights[bmu_i][bmu_j][(digit+1)*DIGIT_DIM-1 -:DIGIT_DIM] = -k_value;
                         else 
-                            weights[bmu_i][bmu_j][digit] = temp;
+                            weights[bmu_i][bmu_j][(digit+1)*DIGIT_DIM-1 -:DIGIT_DIM] = temp;
                     end
                 end                
             end
@@ -426,11 +425,7 @@ module isom
             if (bmu_i == bmu_x+nb_radius+1 || bmu_i==ROWS) begin
                 nb_search_en = 0; // neighbourhood search finished        
                 next_x_en = 1; // go to the next input
-            end
-            
-//            end
-            
-            
+            end            
         end
     end
     
@@ -554,11 +549,11 @@ module isom
                     for (k=0;k<DIM;k=k+1)
                     begin
                         // get distnace
-                        hamming_distance = hamming_distance + (weights[i][j][k]*testX[t2][k] == 2'b11 ? 2'b01 : 2'b00);
+                        hamming_distance = hamming_distance + (weights[i][j][(k+1)*DIGIT_DIM-1 -:DIGIT_DIM]*testX[t2][k] == 2'b11 ? 2'b01 : 2'b00);
                         // get zero count
-                        non_zero_count = non_zero_count + (weights[i][j][k] == 2'b00 ? 2'b00 : 2'b01); 
+                        non_zero_count = non_zero_count + (weights[i][j][(k+1)*DIGIT_DIM-1 -:DIGIT_DIM] == 2'b00 ? 2'b00 : 2'b01); 
                         
-                        dot_product = dot_product + weights[i][j][k]*trainX[t1][k];
+                        dot_product = dot_product + weights[i][j][(k+1)*DIGIT_DIM-1 -:DIGIT_DIM]*trainX[t1][k];
                     end // k
                     
                     distances[i][j] = DIM - dot_product;
@@ -630,7 +625,7 @@ module isom
 //            for (i=0; i<=ROWS-1; i=i+1) begin
 //                for (j=0; j<=COLS-1; j=j+1) begin
 //                    for (k=DIM-1; k>=0; k=k-1) begin                        
-//                        $fwriteb(fd, weights[i][j][k]);
+//                        $fwriteb(fd, weights[i][j][(k+1)*DIGIT_DIM-1 -:DIGIT_DIM]);
 //                    end
 //                    $fwrite(fd, "\n");
 //                end

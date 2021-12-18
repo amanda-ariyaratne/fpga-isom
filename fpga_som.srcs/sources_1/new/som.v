@@ -2,26 +2,25 @@
 
 module som
     #(
-        parameter DIM = 4,
-        parameter LOG2_DIM = 3, 
+        parameter DIM = 11,
+        parameter LOG2_DIM = 4, 
         parameter DIGIT_DIM = 32,
         
-        parameter ROWS = 10,
-        parameter LOG2_ROWS = 4, 
-        parameter COLS = 10,
-        parameter LOG2_COLS = 4,     
+        parameter ROWS = 5,
+        parameter LOG2_ROWS = 3, 
+        parameter COLS = 5,
+        parameter LOG2_COLS = 3,     
         
-        parameter TRAIN_ROWS = 75,
-        parameter LOG2_TRAIN_ROWS = 7,
-        parameter TEST_ROWS = 150,
-        parameter LOG2_TEST_ROWS = 8, 
+        parameter TRAIN_ROWS = 900,
+        parameter LOG2_TRAIN_ROWS = 10,
+        parameter TEST_ROWS = 300,
+        parameter LOG2_TEST_ROWS = 10, 
         
-        parameter NUM_CLASSES = 3+1,
+        parameter NUM_CLASSES = 2+1,
         parameter LOG2_NUM_CLASSES = 2, 
         
-        parameter TOTAL_ITERATIONS=50,              
+        parameter TOTAL_ITERATIONS=10,              
         parameter LOG2_TOT_ITERATIONS = 6,
-        
         
         parameter INITIAL_NB_RADIUS = 3,
         parameter NB_RADIUS_STEP = 1,
@@ -122,7 +121,15 @@ module som
         $readmemb("som_test_y.mem", testY);
     end
     
-        ////////////////////*****************************Initialize frequenct list*************//////////////////////////////
+//    initial begin
+//        for (i = 0; i < TEST_ROWS; i = i + 1) begin
+//            for (j = 0; j < DIM; j = j + 1) begin
+//                $display(testX[i][j]);
+//            end
+//        end
+//    end
+    
+    ////////////////////*****************************Initialize frequenct list*************//////////////////////////////
     initial begin
         for (ii = 0; ii < ROWS; ii = ii + 1) begin
             for (jj = 0; jj < COLS; jj = jj + 1)
@@ -140,7 +147,7 @@ module som
     ///////////////////////////////////////////////////////*******************Start Training***********/////////////////////////////////////
     always @(posedge clk) begin
         if (training_en) begin
-//            $display("training_en");
+            //$display("training_en");
             iteration = -1;
             next_iteration_en = 1;
             training_en = 0;
@@ -156,7 +163,7 @@ module som
             if (iteration<(TOTAL_ITERATIONS-1)) begin
                 // change current iteration
                 iteration = iteration + 1;
-//                $display("iteration ", iteration);
+                //$display("iteration ", iteration);
             
                 // change update alpha
                 for (step_i=1; step_i<=A_STEP;step_i = step_i+1) begin
@@ -208,7 +215,7 @@ module som
             alpha_reset=0;
             
             if (alpha_done) begin
-//                $display("ALPHA updated");
+                //$display("ALPHA updated");
                 alpha = alpha_out;
                 alpha_en=0;
                 alpha_reset=1;
@@ -222,10 +229,10 @@ module som
         if (next_x_en && !classification_en) begin                
             if (t1<TRAIN_ROWS-1) begin        
                 t1 = t1 + 1;
-//                $display("t1 ", t1,"-", iteration);
+                //$display("t1 ", t1,"-", iteration);
                 dist_enable = 1;
             end else begin
-//                $display("next_iteration_en ", iteration); 
+                //$display("next_iteration_en ", iteration); 
                 next_iteration_en = 1;                              
             end
                                
@@ -238,7 +245,7 @@ module som
     begin
         if (init_classification_en)
         begin
-//            $display("init_classification_en"); 
+            //$display("init_classification_en"); 
             next_x_en = 1;
             classification_en = 1;
             init_classification_en = 0;
@@ -256,9 +263,9 @@ module som
             if (t1<TRAIN_ROWS-1) begin                           
                 t1 = t1 + 1;
                 dist_enable = 1;                
-//                $display("classify ", t1);    
+                //$display("classify ", t1);    
             end else begin    
-//                $display("classification_en STOPPED"); 
+                //$display("classification_en STOPPED"); 
                 classification_en = 0; 
                 class_label_en = 1;                
             end 
@@ -295,7 +302,11 @@ module som
     generate
         for(euc_i=0; euc_i<=ROWS-1; euc_i=euc_i+1) begin
             for(euc_j=0; euc_j<=COLS-1; euc_j=euc_j+1) begin
-                fpa_euclidean_distance euclidean_distance(
+                fpa_euclidean_distance #(
+                    .DIM(DIM),  
+                    .DIGIT_DIM(DIGIT_DIM)
+                )
+                euclidean_distance(
                     .clk(clk),
                     .en(distance_en),
                     .reset(distance_reset),
@@ -332,20 +343,6 @@ module som
             distance_en=1;
             
             if (distance_done == {ROWS*COLS{1'b1}}) begin
-//                $display("All distance done for ", t1);
-//                $display("input %h", trainX[t1]);
-//                $display("input %b", trainX[t1]);
-//                $display("5 0 weight %b distance %b", weights[9][0], distance_out[9][0]);
-//                $display("1 1 weight %b distance %b", weights[9][1], distance_out[9][1]);
-//                $display("1 2 weight %b distance %b", weights[9][2], distance_out[9][2]);
-//                $display("1 3 weight %b distance %b", weights[9][3], distance_out[9][3]);
-//                $display("1 4 weight %b distance %b", weights[9][4], distance_out[9][4]);
-//                $display("1 5 weight %b distance %b", weights[9][5], distance_out[9][5]);
-//                $display("1 6 weight %b distance %b", weights[9][6], distance_out[9][6]);
-//                $display("1 7 weight %b distance %b", weights[9][7], distance_out[9][7]);
-//                $display("1 8 weight %b distance %b", weights[9][8], distance_out[9][8]);
-//                $display("1 9 weight %b distance %b", weights[9][9], distance_out[9][9]);
-//                                    is_completed = 1;
                 distance_en = 0;
                 distance_reset = 1;
                 i = 0;
@@ -586,8 +583,7 @@ module som
                 classify_x_en = 1;
             end else begin 
                 test_mode=0;                
-                write_en=1;
-                is_completed = 1;             
+                is_completed=1;           
             end
             test_en = 0;
         end
@@ -633,7 +629,7 @@ module som
 //    integer fd;    
 //    always @(posedge clk) begin
 //        if (write_en) begin
-//            fd = $fopen("/home/aari/Projects/Vivado/fpga_som/som/weight_out.data", "w");
+//            fd = $fopen("/home/mad/Documents/Projects/fpga-isom/som/weight_out.data", "w");
 //            for (i=0; i<=ROWS-1; i=i+1) begin
 //                for (j=0; j<=COLS-1; j=j+1) begin
 //                    $fwriteb(fd, weights[i][j]);

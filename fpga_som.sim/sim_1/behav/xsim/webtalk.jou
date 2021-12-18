@@ -2,11 +2,11 @@
 # Webtalk v2020.2 (64-bit)
 # SW Build 3064766 on Wed Nov 18 09:12:47 MST 2020
 # IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
-# Start of session at: Sat Dec  4 12:12:34 2021
-# Process ID: 14159
+# Start of session at: Fri Dec 17 20:45:25 2021
+# Process ID: 31725
 # Current directory: /home/mad/Documents/Projects/fpga-isom/fpga_som.sim/sim_1/behav/xsim
-# Command line: wbtcv -mode batch -source /home/mad/Documents/Projects/fpga-isom/fpga_som.sim/sim_1/behav/xsim/xsim.dir/isom_tb_behav/webtalk/xsim_webtalk.tcl -notrace
+# Command line: wbtcv -mode batch -source /home/mad/Documents/Projects/fpga-isom/fpga_som.sim/sim_1/behav/xsim/xsim.dir/csom_tb_behav/webtalk/xsim_webtalk.tcl -notrace
 # Log file: /home/mad/Documents/Projects/fpga-isom/fpga_som.sim/sim_1/behav/xsim/webtalk.log
 # Journal file: /home/mad/Documents/Projects/fpga-isom/fpga_som.sim/sim_1/behav/xsim/webtalk.jou
 #-----------------------------------------------------------
-source /home/mad/Documents/Projects/fpga-isom/fpga_som.sim/sim_1/behav/xsim/xsim.dir/isom_tb_behav/webtalk/xsim_webtalk.tcl -notrace
+source /home/mad/Documents/Projects/fpga-isom/fpga_som.sim/sim_1/behav/xsim/xsim.dir/csom_tb_behav/webtalk/xsim_webtalk.tcl -notrace
