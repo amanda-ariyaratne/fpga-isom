@@ -2,8 +2,8 @@
 
 module gsom
     #(
-        parameter DIM = 4,
-        parameter LOG2_DIM = 3, 
+        parameter DIM = 11,
+        parameter LOG2_DIM = 4, 
         parameter DIGIT_DIM = 32,
         
         parameter INIT_ROWS = 2,
@@ -12,28 +12,28 @@ module gsom
         parameter MAX_ROWS = 10,
         parameter MAX_COLS = 10,
         
-        parameter LOG2_ROWS = 7,         
-        parameter LOG2_COLS = 7,
+        parameter LOG2_ROWS = 4,         
+        parameter LOG2_COLS = 4,
 
-        parameter MAX_NODE_SIZE = 10,
-        parameter LOG2_NODE_SIZE = 14,
+        parameter MAX_NODE_SIZE = 100,
+        parameter LOG2_NODE_SIZE = 7,
         
-        parameter GROWING_ITERATIONS = 100,
-        parameter LOG2_GROWING_ITERATIONS = 7,
-        parameter SMOOTHING_ITERATIONS = 50,
-        parameter LOG2_SMOOTHING_ITERATIONS = 6,
+        parameter GROWING_ITERATIONS = 10,
+        parameter LOG2_GROWING_ITERATIONS = 4,
+        parameter SMOOTHING_ITERATIONS = 5,
+        parameter LOG2_SMOOTHING_ITERATIONS = 4,
         
-        parameter TRAIN_ROWS = 75,
-        parameter LOG2_TRAIN_ROWS = 7,
-        parameter TEST_ROWS = 150,
-        parameter LOG2_TEST_ROWS = 8,
+        parameter TRAIN_ROWS = 900,
+        parameter LOG2_TRAIN_ROWS = 10,
+        parameter TEST_ROWS = 300,
+        parameter LOG2_TEST_ROWS = 10, 
         
-        parameter NUM_CLASSES = 3+1,
+        parameter NUM_CLASSES = 2+1,
         parameter LOG2_NUM_CLASSES = 2,
         
         // model parameters
-        parameter spread_factor = 32'h3E99999A, //0.3
-        parameter spread_factor_logval = 32'hBF9A1BC8, // BE9A209B = -1.20397280433
+        parameter spread_factor = 32'h3DCCCCCD, //0.1
+        parameter spread_factor_logval = 32'hBF800000, // BF800000 = -1
         
         parameter dimensions_ieee754 = 32'h40800000, // 4
         parameter initial_learning_rate=32'h3E99999A, // 0.3
@@ -41,8 +41,7 @@ module gsom
         parameter max_radius=4,
         parameter FD=32'h3F8CCCCD, //1.1
         parameter r=32'h40733333, //3.8
-        parameter alpha=32'h3F666666, //0.9
-        parameter initial_node_size=10000
+        parameter alpha=32'h3F666666 //0.9
 
     )(
         input wire clk
@@ -52,8 +51,8 @@ module gsom
     localparam [DIGIT_DIM-1:0] p_inf = 32'b0111_1111_1111_1111_1111_1111_1111_1111;
     localparam [DIGIT_DIM-1:0] n_inf = 32'b1111_1111_1111_1111_1111_1111_1111_1111;
     
-    localparam delta_growing_iter = 34;
-    localparam delta_smoothing_iter = 17;
+    localparam delta_growing_iter = 3;
+    localparam delta_smoothing_iter = 3;
     
     reg signed [LOG2_NODE_SIZE:0] i = 0;
     reg signed [LOG2_NODE_SIZE:0] j = 0;
@@ -237,7 +236,13 @@ module gsom
     genvar euc_i;
     generate
         for(euc_i=0; euc_i<=MAX_NODE_SIZE-1; euc_i=euc_i+1) begin
-            gsom_euclidean_distance euclidean_distance(
+            gsom_euclidean_distance 
+            #(
+                .DIM(DIM),
+                .DIGIT_DIM(DIGIT_DIM),
+                .LOG2_NODE_SIZE(LOG2_NODE_SIZE)
+            )
+            euclidean_distance(
                 .clk(clk),
                 .en(distance_en),
                 .reset(distance_reset),
@@ -288,7 +293,12 @@ module gsom
     genvar update_i;
     generate
         for (update_i=1; update_i<=DIM; update_i=update_i+1) begin
-            gsom_update_weight update_weight(
+            gsom_update_weight 
+            #(
+                .DIM(DIM),
+                .DIGIT_DIM(DIGIT_DIM)
+            )
+            update_weight(
                 .clk(clk),
                 .en(update_en),
                 .reset(update_reset),
@@ -299,7 +309,13 @@ module gsom
                 .is_done(update_done[update_i-1])
             );
             
-            gsom_update_neighbour update_neighbour_weight(
+            gsom_update_neighbour 
+            #(
+                .DIM(DIM),
+                .DIGIT_DIM(DIGIT_DIM),
+                .LOG2_NODE_SIZE(LOG2_NODE_SIZE)
+            )
+            update_neighbour_weight(
                 .clk(clk),
                 .en(update_neighbour_en),
                 .reset(update_neighbour_reset),
@@ -315,9 +331,9 @@ module gsom
     ///////////////////////////////////////////**************************update_node_error**************************/////////////////////////////////////////////////////
     reg node_error_add_en=0;
     reg node_error_add_reset;
-    reg [31:0] node_error_add_in_1;
-    reg [31:0] node_error_add_in_2;
-    wire [31:0] node_error_add_out;
+    reg [DIGIT_DIM-1:0] node_error_add_in_1;
+    reg [DIGIT_DIM-1:0] node_error_add_in_2;
+    wire [DIGIT_DIM-1:0] node_error_add_out;
     wire node_error_add_done;
     
     fpa_adder node_error_adder(
@@ -352,8 +368,8 @@ module gsom
     endgenerate
     
     ///////////////////////////////////////////**************************new_node_in_middle**************************/////////////////////////////////////////////////////
-    reg [DIM*4-1:0] new_node_in_middle_en = 0;
-    reg [DIM*4-1:0] new_node_in_middle_reset = 0;
+    reg [DIM*4-1:0] new_node_in_middle_en = {DIM*4{1'b0}};
+    reg [DIM*4-1:0] new_node_in_middle_reset = {DIM*4{1'b0}};
     reg [DIGIT_DIM*DIM*4-1:0] new_node_in_middle_winner, new_node_in_middle_next_node;
     wire [DIM*4-1:0] new_node_in_middle_is_done;
     wire [DIGIT_DIM*DIM*4-1:0] new_node_in_middle_weight;
@@ -361,21 +377,25 @@ module gsom
     genvar nim_i, nim_dim_i;
     for (nim_i=0; nim_i<4; nim_i=nim_i+1) begin
         for (nim_dim_i=0; nim_dim_i<DIM; nim_dim_i=nim_dim_i+1) begin
-            gsom_grow_node_in_middle grow_node_in_middle(
+            gsom_grow_node_in_middle 
+            #(
+                .DIGIT_DIM(DIGIT_DIM)
+            )
+            grow_node_in_middle(
                 .clk(clk),
-                .reset(new_node_in_middle_reset[nim_i*4+nim_dim_i]),
-                .en(new_node_in_middle_en[nim_i*4+nim_dim_i]),
-                .winner(new_node_in_middle_winner[DIGIT_DIM*DIM*(nim_i)+DIGIT_DIM*(nim_dim_i+1) -1 -:DIGIT_DIM]),
+                .reset(new_node_in_middle_reset[nim_i*DIM+nim_dim_i]),
+                .en(new_node_in_middle_en[nim_i*DIM+nim_dim_i]),
+                .winner(new_node_in_middle_winner[DIGIT_DIM*DIM*(nim_i)+DIGIT_DIM*(nim_dim_i+1) -1 -:DIGIT_DIM ]),
                 .node_next(new_node_in_middle_next_node[DIGIT_DIM*DIM*(nim_i)+DIGIT_DIM*(nim_dim_i+1) -1 -:DIGIT_DIM]),
                 .weight(new_node_in_middle_weight[DIGIT_DIM*DIM*(nim_i)+DIGIT_DIM*(nim_dim_i+1) -1 -:DIGIT_DIM]),
-                .is_done(new_node_in_middle_is_done[nim_i*4+nim_dim_i])
+                .is_done(new_node_in_middle_is_done[nim_i*DIM+nim_dim_i])
             );
         end
     end
     
     ///////////////////////////////////////////**************************new_node_on_one_side**************************/////////////////////////////////////////////////////
-    reg [DIM*4-1:0] new_node_on_one_side_en = 0;
-    reg [DIM*4-1:0] new_node_on_one_side_reset = 0;
+    reg [DIM*4-1:0] new_node_on_one_side_en = {DIM*4{1'b0}};
+    reg [DIM*4-1:0] new_node_on_one_side_reset = {DIM*4{1'b0}};
     reg [DIGIT_DIM*DIM*4-1:0] new_node_on_one_side_winner, new_node_on_one_side_next_node;
     wire [DIM*4-1:0] new_node_on_one_side_is_done;
     wire [DIGIT_DIM*DIM*4-1:0] new_node_on_one_side_weight;
@@ -383,14 +403,19 @@ module gsom
     genvar noos_i, noos_dim_i;
     for (noos_i=0; noos_i<4; noos_i=noos_i+1) begin
         for (noos_dim_i=0; noos_dim_i<DIM; noos_dim_i=noos_dim_i+1) begin
-            gsom_grow_node_on_one_side grow_node_on_one_side(
+            gsom_grow_node_on_one_side
+            #(
+                .DIGIT_DIM(DIGIT_DIM)
+            )
+            grow_node_on_one_side
+            (
                 .clk(clk),
-                .reset(new_node_on_one_side_reset[noos_i*4+noos_dim_i]),
-                .en(new_node_on_one_side_en[noos_i*4+noos_dim_i]),
+                .reset(new_node_on_one_side_reset[noos_i*DIM+noos_dim_i]),
+                .en(new_node_on_one_side_en[noos_i*DIM+noos_dim_i]),
                 .winner(new_node_on_one_side_winner[DIGIT_DIM*DIM*(noos_i)+DIGIT_DIM*(noos_dim_i+1) -1 -:DIGIT_DIM]),
                 .node_next(new_node_on_one_side_next_node[DIGIT_DIM*DIM*(noos_i)+DIGIT_DIM*(noos_dim_i+1) -1 -:DIGIT_DIM]),
                 .weight(new_node_on_one_side_weight[DIGIT_DIM*DIM*(noos_i)+DIGIT_DIM*(noos_dim_i+1) -1 -:DIGIT_DIM]),
-                .is_done(new_node_on_one_side_is_done[noos_i*4+noos_dim_i])
+                .is_done(new_node_on_one_side_is_done[noos_i*DIM+noos_dim_i])
             );
         end
     end
@@ -412,13 +437,6 @@ module gsom
             
             x_y_signs[0] = x[LOG2_ROWS];
             x_y_signs[1] = y[LOG2_COLS];
-//            if (t1==9 && bmu_i==bmu[1] && bmu_j==bmu[0]) $display("x_y_signs - %d, 0 - %d, 1 - %d, -1 - %d, 2 - %d", 
-//                x_y_signs,
-//                map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*1-1 -:(LOG2_NODE_SIZE+1)],
-//                map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*2-1 -:(LOG2_NODE_SIZE+1)],
-//                map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*3-1 -:(LOG2_NODE_SIZE+1)],
-//                map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*4-1 -:(LOG2_NODE_SIZE+1)]
-//            );
             
             if ((map[abs_x][abs_y][(LOG2_NODE_SIZE+1)*1-1 -:(LOG2_NODE_SIZE+1)] != {LOG2_NODE_SIZE+1{1'b1}}) && (x_y_signs==0)) begin
                 is_in_map = map[abs_x][abs_y][LOG2_NODE_SIZE*1-1 -:LOG2_NODE_SIZE];
@@ -435,8 +453,6 @@ module gsom
             end else begin
                 is_in_map = -1;
             end
-            
-//            if (t1==39 && bmu_i==bmu[1] && bmu_j==bmu[0]) $display("is_in_map %d", is_in_map);
         end
     endfunction
     
@@ -655,8 +671,8 @@ module gsom
                 next_iteration_en = 0;
             end else begin
                 iteration = -1;
-                // write_en = 1;
-                is_completed = 1;
+                write_en = 1;
+                //is_completed = 1;
                 smoothing_iter_en = 0;
             end
         end       
@@ -685,7 +701,7 @@ module gsom
         if (next_t1_en) begin
             if (t1 < TRAIN_ROWS-1) begin
                 t1 = t1 + 1;   
-//                $display("iter %d t1 %d node count %d", iteration, t1, node_count);
+                $display("iter %d t1 %d node count %d", iteration, t1, node_count);
                 
                 dist_enable = 1;
             end else begin
@@ -945,18 +961,6 @@ module gsom
                     new_node_on_one_side_winner[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM] = node_list[rmu];
                     new_node_on_one_side_next_node[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM] = node_list[u_idx];
                     
-//                    $display(" winner %h %h %h %h next %h %h %h %h", 
-//                        new_node_on_one_side_winner[DIGIT_DIM*4*1-1 -:DIGIT_DIM],
-//                        new_node_on_one_side_winner[DIGIT_DIM*3*1-1 -:DIGIT_DIM],
-//                        new_node_on_one_side_winner[DIGIT_DIM*2*1-1 -:DIGIT_DIM],
-//                        new_node_on_one_side_winner[DIGIT_DIM*1*1-1 -:DIGIT_DIM],
-//                        new_node_on_one_side_next_node[DIGIT_DIM*4*1-1 -:DIGIT_DIM],
-//                        new_node_on_one_side_next_node[DIGIT_DIM*3*1-1 -:DIGIT_DIM],
-//                        new_node_on_one_side_next_node[DIGIT_DIM*2*1-1 -:DIGIT_DIM],
-//                        new_node_on_one_side_next_node[DIGIT_DIM*1*1-1 -:DIGIT_DIM],
-                        
-//                    );
-                    
                 end else begin
                     u_idx = is_in_map(bmu[1]+1, bmu[0]);
                     if (u_idx != -1) begin
@@ -1124,18 +1128,20 @@ module gsom
 //            if (new_node_on_one_side_en[i*DIM-1 -:DIM]=={4{1'b1}}) $display("on_one_side %d", new_node_on_one_side_is_done[i*DIM-1 -:DIM]);
             
             if (new_node_in_middle_is_done[i*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[i-1]) begin
+                $display(new_node_in_middle_en);
                 new_node_in_middle_en[i*DIM-1 -:DIM] = 0;
                 new_node_in_middle_reset[i*DIM-1 -:DIM] = {DIM{1'b1}};
                 insert_new_node(new_node_idx_x[i-1], new_node_idx_y[i-1], new_node_in_middle_weight[DIGIT_DIM*DIM*i-1 -:DIGIT_DIM*DIM]);
                 grow_done[i-1] = 1;
-//                $display("inserted in_middle %d %h %h", i-1, new_node_idx_x[i-1], new_node_idx_y[i-1]);
+                $display("inserted in_middle %d %d %d", i-1, new_node_idx_x[i-1], new_node_idx_y[i-1]);
             end
             if (new_node_on_one_side_is_done[i*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[i-1]) begin
+                $display(new_node_on_one_side_en);
                 new_node_on_one_side_en[i*DIM-1 -:DIM] = 0;
                 new_node_on_one_side_reset[i*DIM-1 -:DIM] = {DIM{1'b1}};
                 insert_new_node(new_node_idx_x[i-1], new_node_idx_y[i-1], new_node_on_one_side_weight[DIGIT_DIM*DIM*i-1 -:DIGIT_DIM*DIM]);
                 grow_done[i-1] = 1;
-//                $display("inserted on_one_side %d %h %h", i-1, new_node_idx_x[i-1], new_node_idx_y[i-1]);
+                $display("inserted on_one_side %d %d %d", i-1, new_node_idx_x[i-1], new_node_idx_y[i-1]);
             end
         end
         if (grow_done==4'b1111 && !node_count_adder_en) begin
@@ -1160,23 +1166,29 @@ module gsom
         end
     end
     ///////////////////////////////////////////**************************write_weights**************************/////////////////////////////////////////////////////
-//    integer file_dir;    
-//    always @(posedge clk) begin
-//        if (write_en) begin
-//            file_dir = $fopen("/home/mad/Documents/Projects/fpga-isom/gsom/weight_out.data", "w");
-//            i=0; j=0; k=0;
-//            for (i=0; i<=node_count-1; i=i+1) begin
-//                for (j=DIM*DIGIT_DIM-1; j>=0; j=j-1) begin
-//                    $fwriteb(file_dir, node_list[i][j]);
-//                end
-//                $fwrite(file_dir, "\n");
-////                $display("Written %d %d", i, node_list[i]);
-//            end
+    integer file_dir, file_i, file_j;    
+    always @(posedge clk) begin
+        if (write_en) begin
+            file_dir = $fopen("/home/mad/Documents/Projects/fpga-isom/gsom/weight_out.data", "w");
+            for (file_i=0; file_i<=node_count-1; file_i=file_i+1) begin
+                for (file_j=DIM*DIGIT_DIM-1; file_j>=0; file_j=file_j-1) begin
+                    $fwriteb(file_dir, node_list[file_i][file_j]);
+                end
+                $fwrite(file_dir, "\n");
+            end
             
-//            #10 $fclose(file_dir);            
-//            is_completed = 1;   
-//            $finish;
-//        end
-//    end
+            file_dir = $fopen("/home/mad/Documents/Projects/fpga-isom/gsom/coords.data", "w");
+            for (file_i=0; file_i<=node_count-1; file_i=file_i+1) begin
+                $fwriteb(file_dir, node_coords[file_i][1]);
+                $fwrite(file_dir, " ");
+                $fwriteb(file_dir, node_coords[file_i][0]);
+                $fwrite(file_dir, "\n");
+            end
+            
+            #10 $fclose(file_dir);            
+            is_completed = 1;   
+            $finish;
+        end
+    end
     
 endmodule

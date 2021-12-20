@@ -44,7 +44,7 @@ INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/Projects/fpga-i
 INFO: [VRFC 10-311] analyzing module gsom_grow_node_in_middle
 INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_grow_node_on_one_side.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module gsom_grow_node_on_one_side
-INFO: [VRFC 10-2458] undeclared symbol add_rpeset, assumed default net type wire [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_grow_node_on_one_side.v:31]
+INFO: [VRFC 10-2458] undeclared symbol add_rpeset, assumed default net type wire [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_grow_node_on_one_side.v:30]
 INFO: [VRFC 10-2263] Analyzing Verilog file "/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_backup.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module gsom_backup
 INFO: [VRFC 10-2458] undeclared symbol fd, assumed default net type wire [/home/mad/Documents/Projects/fpga-isom/fpga_som.srcs/sources_1/new/gsom_backup.v:724]

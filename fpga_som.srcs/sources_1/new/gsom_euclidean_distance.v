@@ -2,9 +2,9 @@
 
 module gsom_euclidean_distance
 #(
-    parameter DIM=4,
+    parameter DIM=11,
     parameter DIGIT_DIM=32,
-    parameter LOG2_NODE_SIZE=14
+    parameter LOG2_NODE_SIZE=9
 )
 (
     input wire clk,
@@ -36,26 +36,23 @@ wire [DIM-1:0] dist_sqr_is_done;
 
 
 ////////////////////Get all done to one variable///////////////////////
-//genvar k;
-//generate
-//    for (k=1; k<=DIM; k=k+1) begin
-//        assign dist_sqr_is_done[k-1] = dist_sqr_done[DIGIT_DIM*k-1];
-//    end
-//endgenerate
-
-assign dist_sqr_is_done[1-1] = dist_sqr_done[DIGIT_DIM*1-1];
-assign dist_sqr_is_done[2-1] = dist_sqr_done[DIGIT_DIM*2-1];
-assign dist_sqr_is_done[3-1] = dist_sqr_done[DIGIT_DIM*3-1];
-assign dist_sqr_is_done[4-1] = dist_sqr_done[DIGIT_DIM*4-1];
-
-//assign dist_sqr_in_1 = weight;
-//assign dist_sqr_in_2 = trainX;
+genvar k;
+generate
+    for (k=1; k<=DIM; k=k+1) begin
+        assign dist_sqr_is_done[k-1] = dist_sqr_done[DIGIT_DIM*k-1];
+    end
+endgenerate
 
 ////////////////////parallel blocks for distance square///////////////////////
 genvar i;
 generate
     for (i=DIGIT_DIM; i<=DIM*DIGIT_DIM; i=i+DIGIT_DIM) begin
-        fpa_distance dist_sqr(
+        fpa_distance
+        #(
+            .DIM(DIM),
+            .DIGIT_DIM(DIGIT_DIM)
+        )
+        dist_sqr(
             .clk(clk),
             .en(dist_sqr_en),
             .reset(dist_sqr_reset),

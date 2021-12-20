@@ -2,7 +2,7 @@
 
 module fpa_distance
 #(
-    parameter DIM=4,
+    parameter DIM=11,
     parameter DIGIT_DIM=32
 )
 (

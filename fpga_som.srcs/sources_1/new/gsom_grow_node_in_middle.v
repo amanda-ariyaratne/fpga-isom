@@ -2,8 +2,7 @@
 
 module gsom_grow_node_in_middle
 #(
-    parameter DIGIT_DIM=32,
-    parameter LOG2_NODE_COUNT=7
+    parameter DIGIT_DIM=32
 )
 (
     input clk,
