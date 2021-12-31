@@ -31,9 +31,12 @@ assign sgn2 = num2[31];
 assign num_out = {sgn_out, exp_out, man_out[22:0]};
 assign is_done = done;
 
-always @(posedge clk)
-begin
-    if (en && init) begin
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
+        done = 0;
+        init = 1;
+    end
+    else if (en && init) begin
         if ((num1[30:23] == 0 && num1[22:0] == 0) || (num2[30:23] == 0 && num2[22:0] == 0)) begin
             sgn_out = 0;
             exp_out = 0;
@@ -87,11 +90,6 @@ begin
         done = 1;
         init = 0;
     end
-end
-
-always @(posedge reset) begin
-    done = 0;
-    init = 1;
 end
 
 endmodule

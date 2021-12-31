@@ -31,7 +31,7 @@ reg [31:0] mul_in_1;
 reg [31:0] mul_in_2;
 wire [31:0] mul_out;
 reg mul_reset;
-wire [1:0] mul_done;
+wire mul_done;
 
 reg en_add=0;
 reg en_mul=0;
@@ -60,13 +60,12 @@ fpa_multiplier multiply(
     .is_done(mul_done)
 );
 
-always @(posedge reset) begin
-    done = 0;
-    en_1=1;
-end
-
-always @(posedge clk) begin
-    if (en && en_1) begin
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
+        done = 0;
+        en_1=1;
+    end
+    else if (en && en_1) begin
         add_reset = 0;
         add_in_1 = weight;
         add_in_2 = train_row;
@@ -75,11 +74,7 @@ always @(posedge clk) begin
         
         en_1=0; // off this block
         en_2=1; // on next block
-    end
-end
-
-always @(posedge clk) begin
-    if (en && en_2 && add_done) begin
+    end else if (en && en_2 && add_done) begin
         en_add=0; // off adder module
         add_reset = 1;
         
@@ -90,11 +85,7 @@ always @(posedge clk) begin
         
         en_2=0; // off this block
         en_3=1; // on next block
-    end
-end
-
-always @(posedge clk) begin
-    if (en && en_3 && mul_done) begin
+    end else if (en && en_3 && mul_done) begin
         en_mul=0; // off multi module
         mul_reset = 1;
         
@@ -105,11 +96,7 @@ always @(posedge clk) begin
         
         en_3=0; // off this block
         en_4=1; // on next block
-    end
-end
-
-always @(posedge clk) begin
-    if (en && en_4 && add_done) begin
+    end else if (en && en_4 && add_done) begin
         en_add = 0;
         add_reset=1;
         done=1;

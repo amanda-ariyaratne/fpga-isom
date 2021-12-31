@@ -26,8 +26,12 @@ reg init=1;
 assign is_done = done;
 assign num_out = max;
 
-always @(posedge clk) begin
-    if (en && init) begin
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
+        done = 0;
+        init = 1;
+    end
+    else if (en && init) begin
         m1[22:0] = num1[22:0];
         m2[22:0] = num2[22:0];
         m1[23] = 1;
@@ -76,11 +80,6 @@ always @(posedge clk) begin
         done = 1;
         init = 0;
     end
-end
-
-always @(posedge reset) begin
-    done = 0;
-    init = 1;
 end
 
 endmodule

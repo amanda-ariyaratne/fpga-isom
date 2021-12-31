@@ -35,15 +35,14 @@ reg done = 0;
 assign is_done = done;
 assign num_out = summation;
 
-always @(posedge reset) begin
-    done = 0;
-    init = 1;
-    normalize = 0;  
-    shift_count = 0;  
-end
-
-always @(posedge clk) begin
-    if (en && init) begin 
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
+        done = 0;
+        init = 1;
+        normalize = 0;  
+        shift_count = 0;  
+    end
+    else if (en && init) begin 
         // compare exponents
         summation=0;
         if (num1[30:23] > num2[30:23])
@@ -100,12 +99,7 @@ always @(posedge clk) begin
         end
         init = 0;
         normalize = 1;
-    end
-end
-
-always @(posedge clk) begin
-    
-    if (normalize) begin        
+    end else if (normalize) begin        
         if (sign1 == sign2) begin
             normalize = 0; 
             
@@ -127,5 +121,6 @@ always @(posedge clk) begin
         end
     end
 end
+
 
 endmodule

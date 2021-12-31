@@ -51,8 +51,12 @@ fpa_multiplier square_unit(
     .is_done(square_done)
 );
 
-always @(posedge clk) begin 
-    if (en && init) begin  
+always @(posedge clk or posedge reset) begin 
+    if (reset) begin
+        done = 0;
+        init=1;
+    end
+    else if (en && init) begin  
         sub_in_1 = num1;
         sub_in_2 = num2;
         sub_in_2[DIGIT_DIM-1] = ~sub_in_2[DIGIT_DIM-1]; // flip the sign bit
@@ -61,7 +65,7 @@ always @(posedge clk) begin
         init=0;
     end
     
-    if (subtraction_done && !squrae_en) begin
+    else if (subtraction_done && !squrae_en) begin
         sub_en=0;
         sub_reset=1;
         
@@ -70,16 +74,11 @@ always @(posedge clk) begin
         squrae_reset=0;
     end
     
-    if (square_done) begin 
+    else if (square_done) begin 
         done = 1;    
         squrae_en=0;        
         squrae_reset=1; 
     end
-end
-
-always @(posedge reset) begin
-    done = 0;
-    init=1;
 end
 
 assign is_done = done;

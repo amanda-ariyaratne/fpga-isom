@@ -134,53 +134,9 @@ module som
             end
         end
         training_en = 1;
-//        $display("class frequnecy list initialized");
-    end
-    
-    ///////////////////////////////////////////////////////*******************Start Training***********/////////////////////////////////////
-    always @(posedge clk) begin
-        if (training_en) begin
-//            $display("training_en");
-            iteration = -1;
-            next_iteration_en = 1;
-            training_en = 0;
-        end
     end
     
     integer step_i;
-    always @(posedge clk)
-    begin
-        if (next_iteration_en)
-        begin
-            t1 = -1; // reset trainset pointer
-            if (iteration<(TOTAL_ITERATIONS-1)) begin
-                // change current iteration
-                iteration = iteration + 1;
-//                $display("iteration ", iteration);
-            
-                // change update alpha
-                for (step_i=1; step_i<=A_STEP;step_i = step_i+1) begin
-                    if ((iteration==(ITERATION_STEP*step_i))) begin
-                        update_alpha_en=1;
-                    end
-                end
-                // change neighbouhood radius
-                for (step_i=1; step_i<=N_STEP;step_i = step_i+1) begin
-                    if ( (iteration==(ITERATION_NB_STEP*step_i) ) ) begin
-                        nb_radius <=  nb_radius-NB_RADIUS_STEP;
-                    end
-                end                
-                next_x_en = 1; 
-                               
-            end else begin
-                iteration = -1;                
-                next_x_en = 0;                
-                init_classification_en = 1; // start classification                
-            end
-            
-            next_iteration_en = 0;            
-        end
-    end
     
     reg alpha_reset=0;
     reg alpha_en=0;
@@ -189,85 +145,6 @@ module som
     wire [DIGIT_DIM-1:0] alpha_out;
     wire alpha_done;
     
-    fpa_adder alpha_update(
-        .clk(clk),
-        .reset(alpha_reset),
-        .en(alpha_en),
-        .num1(alpha_in_1),
-        .num2(alpha_in_2),
-        .num_out(alpha_out),
-        .is_done(alpha_done)
-    );
-    
-    always @(posedge clk) begin
-        if (update_alpha_en) begin
-            alpha_in_1=alpha;
-            alpha_in_2=ALPHA_STEP;
-            alpha_in_2[DIGIT_DIM-1] = ~alpha_in_2[DIGIT_DIM-1];
-            alpha_en=1;
-            alpha_reset=0;
-            
-            if (alpha_done) begin
-//                $display("ALPHA updated");
-                alpha = alpha_out;
-                alpha_en=0;
-                alpha_reset=1;
-                update_alpha_en=0;
-            end
-        end
-    end
-    
-    always @(posedge clk)
-    begin
-        if (next_x_en && !classification_en) begin                
-            if (t1<TRAIN_ROWS-1) begin        
-                t1 = t1 + 1;
-//                $display("t1 ", t1,"-", iteration);
-                dist_enable = 1;
-            end else begin
-//                $display("next_iteration_en ", iteration); 
-                next_iteration_en = 1;                              
-            end
-                               
-            next_x_en = 0;
-        end
-    end
-    
-    /////////////////////////////////////******************************Classification logic******************************/////////////////////////////////
-    always @(posedge clk)
-    begin
-        if (init_classification_en)
-        begin
-//            $display("init_classification_en"); 
-            next_x_en = 1;
-            classification_en = 1;
-            init_classification_en = 0;
-        end
-    end
-    
-    always @(posedge clk)
-    begin
-        if (next_x_en && classification_en)
-        begin       
-            // classify prev x 's bmu
-            if (t1>=0)
-                class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] =  class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] + 1;
-                      
-            if (t1<TRAIN_ROWS-1) begin                           
-                t1 = t1 + 1;
-                dist_enable = 1;                
-//                $display("classify ", t1);    
-            end else begin    
-//                $display("classification_en STOPPED"); 
-                classification_en = 0; 
-                class_label_en = 1;                
-            end 
-            next_x_en = 0;           
-            
-        end
-    end
-    
-    //////////////////******************************Find BMU******************************/////////////////////////////////
     reg [LOG2_DIM-1:0] iii = 0; 
     
     reg [LOG2_DIM:0] hamming_distance;
@@ -325,99 +202,15 @@ module som
         .is_done(comp_done)
     );
     
-    always @(posedge clk) begin
-        if (dist_enable) begin
-            distance_X=trainX[t1];
-            distance_reset=0;
-            distance_en=1;
-            
-            if (distance_done == {ROWS*COLS{1'b1}}) begin
-//                $display("All distance done for ", t1);
-//                $display("input %h", trainX[t1]);
-//                $display("input %b", trainX[t1]);
-//                $display("5 0 weight %b distance %b", weights[9][0], distance_out[9][0]);
-//                $display("1 1 weight %b distance %b", weights[9][1], distance_out[9][1]);
-//                $display("1 2 weight %b distance %b", weights[9][2], distance_out[9][2]);
-//                $display("1 3 weight %b distance %b", weights[9][3], distance_out[9][3]);
-//                $display("1 4 weight %b distance %b", weights[9][4], distance_out[9][4]);
-//                $display("1 5 weight %b distance %b", weights[9][5], distance_out[9][5]);
-//                $display("1 6 weight %b distance %b", weights[9][6], distance_out[9][6]);
-//                $display("1 7 weight %b distance %b", weights[9][7], distance_out[9][7]);
-//                $display("1 8 weight %b distance %b", weights[9][8], distance_out[9][8]);
-//                $display("1 9 weight %b distance %b", weights[9][9], distance_out[9][9]);
-//                                    is_completed = 1;
-                distance_en = 0;
-                distance_reset = 1;
-                i = 0;
-                j = 0;
-                min_distance_next_index = 0;
-                min_distance = p_inf;
-                dist_enable = 0;
-                min_distance_en = 1;
-            end
-        end
-    end
-    
-    always @(posedge clk) begin
-        if (min_distance_en) begin
-            comp_in_1 = min_distance;
-            comp_in_2 = distance_out[i][j];
-            comp_reset = 0;
-            comp_en = 1;
-            
-            if (comp_done) begin
-                comp_en = 0;
-                comp_reset = 1;
-                
-                if (comp_out==0) begin
-//                    $display(i, j, "    current distance is equal to min distance");
-                    minimum_distance_indices[min_distance_next_index][1] = i;
-                    minimum_distance_indices[min_distance_next_index][0] = j;
-                    min_distance_next_index = min_distance_next_index + 1;
-                
-                end else if (comp_out==1) begin
-//                    $display(i, j, "    current distance is less than min distance");
-                    min_distance = distance_out[i][j];
-                    minimum_distance_indices[0][1] = i;
-                    minimum_distance_indices[0][0] = j;                        
-                    min_distance_next_index = 1;
-                    
-                end 
-                
-//                $display("i, j, distance %h", distance_out[i][j],   i,  j);
-                if (j==COLS-1) begin
-                    j=0;
-                    i=i+1;
-                end else begin
-                    j=j+1;
-                end
-                
-                if (i==ROWS) begin
-                    min_distance_en=0;
-                    bmu_en=1;
-                end
-            end
-        end
-    end
-    
-    always @(posedge clk) begin
-        if (bmu_en && !test_mode) begin            
-            bmu[1] = minimum_distance_indices[min_distance_next_index-1][1];
-            bmu[0] = minimum_distance_indices[min_distance_next_index-1][0];
-
-//            $display("min distance %b", min_distance);
-//            $display("distance out of 2 1 %b", distance_out[1][2]);
-//            $display("bmu ", bmu[1], bmu[0]);
-                 
-            if (!classification_en)
-                init_neigh_search_en = 1;
-            else
-                next_x_en = 1;
-            bmu_en=0;
-        end
-    end
-    
-    //////////////////////************Start Neighbourhood search************//////////////////////////////////////////
+    fpa_adder alpha_update(
+        .clk(clk),
+        .reset(alpha_reset),
+        .en(alpha_en),
+        .num1(alpha_in_1),
+        .num2(alpha_in_2),
+        .num_out(alpha_out),
+        .is_done(alpha_done)
+    );
     
     reg signed [LOG2_ROWS+1:0] bmu_i;
     reg signed [LOG2_COLS+1:0] bmu_j;
@@ -425,19 +218,7 @@ module som
     reg signed [LOG2_COLS+1:0] bmu_y;
     reg signed [LOG2_NB_RADIUS+1:0] man_dist; /////////// not sure
     
-   
-    always @(posedge clk)
-    begin    
-        if (init_neigh_search_en) begin
-            bmu_x = bmu[1]; bmu_y = bmu[0];  
-            bmu_i = (bmu_x-nb_radius) < 0 ? 0 : (bmu_x-nb_radius);            
-            bmu_j = (bmu_y-nb_radius) < 0 ? 0 : (bmu_y-nb_radius);
-            init_neigh_search_en=0;
-            nb_search_en=1;
-        end
-    end
-    
-    integer digit;
+        integer digit;
     
     reg update_en=0;
     reg update_reset=0;
@@ -463,13 +244,182 @@ module som
     endgenerate
     
     reg not_man_dist_en = 0;
+    
+    reg [LOG2_NUM_CLASSES:0] class_labels [ROWS-1:0][COLS-1:0];    
+    reg [DIM-1:0] default_freq [NUM_CLASSES-1:0];
+    integer most_freq = 0;
+    
+    reg [LOG2_TEST_ROWS:0] correct_predictions = 0; // should take log2 of test rows
+    reg [LOG2_NUM_CLASSES:0] predictionY [TEST_ROWS-1:0];
+    reg [LOG2_TEST_ROWS:0] tot_predictions = 0;
+    
+    always @(posedge clk) begin
+        ///////////////////////////////////////////////////////*******************Start Training***********/////////////////////////////////////
+        if (training_en) begin
+            iteration = -1;
+            next_iteration_en = 1;
+            training_en = 0;
+        end
+        
+        else if (next_iteration_en) begin
+            t1 = -1; // reset trainset pointer
+            if (iteration<(TOTAL_ITERATIONS-1)) begin
+                // change current iteration
+                iteration = iteration + 1;
+            
+                // change update alpha
+                for (step_i=1; step_i<=A_STEP;step_i = step_i+1) begin
+                    if ((iteration==(ITERATION_STEP*step_i))) begin
+                        update_alpha_en=1;
+                    end
+                end
+                // change neighbouhood radius
+                for (step_i=1; step_i<=N_STEP;step_i = step_i+1) begin
+                    if ( (iteration==(ITERATION_NB_STEP*step_i) ) ) begin
+                        nb_radius <=  nb_radius-NB_RADIUS_STEP;
+                    end
+                end                
+                next_x_en = 1; 
+                               
+            end else begin
+                iteration = -1;                
+                next_x_en = 0;                
+                init_classification_en = 1; // start classification                
+            end
+            
+            next_iteration_en = 0;            
+        end
+        
+        else if (update_alpha_en) begin
+            alpha_in_1=alpha;
+            alpha_in_2=ALPHA_STEP;
+            alpha_in_2[DIGIT_DIM-1] = ~alpha_in_2[DIGIT_DIM-1];
+            alpha_en=1;
+            alpha_reset=0;
+            
+            if (alpha_done) begin
+                alpha = alpha_out;
+                alpha_en=0;
+                alpha_reset=1;
+                update_alpha_en=0;
+            end
+        end
+        
+        else if (next_x_en && !classification_en) begin                
+            if (t1<TRAIN_ROWS-1) begin        
+                t1 = t1 + 1;
+                dist_enable = 1;
+            end else begin
+                next_iteration_en = 1;                              
+            end
+                               
+            next_x_en = 0;
+        end
+        
+        /////////////////////////////////////******************************Classification logic******************************/////////////////////////////////
+        else if (init_classification_en)
+        begin
+            next_x_en = 1;
+            classification_en = 1;
+            init_classification_en = 0;
+        end
+        
+        else if (next_x_en && classification_en)
+        begin       
+            // classify prev x 's bmu
+            if (t1>=0)
+                class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] =  class_frequency_list[bmu[1]][bmu[0]][trainY[t1]] + 1;
+                      
+            if (t1<TRAIN_ROWS-1) begin                           
+                t1 = t1 + 1;
+                dist_enable = 1;                
+            end else begin    
+                classification_en = 0; 
+                class_label_en = 1;                
+            end 
+            next_x_en = 0;           
+            
+        end
+        
+        //////////////////******************************Find BMU******************************/////////////////////////////////
+        else if (dist_enable) begin
+            distance_X=trainX[t1];
+            distance_reset=0;
+            distance_en=1;
+            
+            if (distance_done == {ROWS*COLS{1'b1}}) begin
+                distance_en = 0;
+                distance_reset = 1;
+                i = 0;
+                j = 0;
+                min_distance_next_index = 0;
+                min_distance = p_inf;
+                dist_enable = 0;
+                min_distance_en = 1;
+            end
+        end
+        
+        else if (min_distance_en) begin
+            comp_in_1 = min_distance;
+            comp_in_2 = distance_out[i][j];
+            comp_reset = 0;
+            comp_en = 1;
+            
+            if (comp_done) begin
+                comp_en = 0;
+                comp_reset = 1;
+                
+                if (comp_out==0) begin
+                    minimum_distance_indices[min_distance_next_index][1] = i;
+                    minimum_distance_indices[min_distance_next_index][0] = j;
+                    min_distance_next_index = min_distance_next_index + 1;
+                
+                end else if (comp_out==1) begin
+                    min_distance = distance_out[i][j];
+                    minimum_distance_indices[0][1] = i;
+                    minimum_distance_indices[0][0] = j;                        
+                    min_distance_next_index = 1;
+                    
+                end 
+                
+                if (j==COLS-1) begin
+                    j=0;
+                    i=i+1;
+                end else begin
+                    j=j+1;
+                end
+                
+                if (i==ROWS) begin
+                    min_distance_en=0;
+                    bmu_en=1;
+                end
+            end
+        end
+        
+        else if (bmu_en && !test_mode) begin            
+            bmu[1] = minimum_distance_indices[min_distance_next_index-1][1];
+            bmu[0] = minimum_distance_indices[min_distance_next_index-1][0];
 
-    always @(posedge clk) begin    
-        if (nb_search_en && !update_en) begin  
+            if (!classification_en)
+                init_neigh_search_en = 1;
+            else
+                next_x_en = 1;
+            bmu_en=0;
+        end
+        
+        //////////////////////************Start Neighbourhood search************//////////////////////////////////////////
+        else if (init_neigh_search_en) begin
+            bmu_x = bmu[1]; bmu_y = bmu[0];  
+            bmu_i = (bmu_x-nb_radius) < 0 ? 0 : (bmu_x-nb_radius);            
+            bmu_j = (bmu_y-nb_radius) < 0 ? 0 : (bmu_y-nb_radius);
+            init_neigh_search_en=0;
+            nb_search_en=1;
+        end
+        
+        else if (nb_search_en && !update_en) begin  
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));              
             if (man_dist <= nb_radius) begin
-//                $display("Accepted " , bmu_i, bmu_j);
                 update_in_1 = weights[bmu_i][bmu_j];
                 update_in_2 = trainX[t1];
                 update_en=1; 
@@ -479,16 +429,12 @@ module som
                 nb_search_en = 0;
             end
         end
-    end
-    
-    always @(posedge clk) begin
-        if ((update_done == {DIM{1'b1}}) || not_man_dist_en) begin
+        
+        else if ((update_done == {DIM{1'b1}}) || not_man_dist_en) begin
             if (update_done == {DIM{1'b1}}) begin
-//                $display("before", weights[bmu_i][bmu_j]);
                 weights[bmu_i][bmu_j] = update_out;
                 update_en=0;
                 update_reset=1;
-//                $display("AFTER UPDATING", weights[bmu_i][bmu_j]);  
             end          
                 
             bmu_j = bmu_j + 1;
@@ -510,15 +456,9 @@ module som
                 not_man_dist_en = 0; // close this block
             end
         end
-    end
-    
-    /////////////////////************Start Classification of weight vectors********///////////////////////
-    reg [LOG2_NUM_CLASSES:0] class_labels [ROWS-1:0][COLS-1:0];    
-    reg [DIM-1:0] default_freq [NUM_CLASSES-1:0];
-    integer most_freq = 0;
-    
-    always @(posedge clk) begin
-        if (class_label_en) begin
+        
+        /////////////////////************Start Classification of weight vectors********///////////////////////
+        else if (class_label_en) begin
             i=0;j=0;k=0;
             for(i=0;i<ROWS;i=i+1)
             begin
@@ -573,14 +513,9 @@ module som
             test_mode = 1;
             t2 = -1;
         end
-    end
-    
-    //////////////////////////////***************Start test************************///////////////////////////////////////////////////////
-    
-    always @(posedge clk)
-    begin
-        if (test_en) begin
-//            $display("t2 ", t2);
+        
+        //////////////////////////////***************Start test************************///////////////////////////////////////////////////////
+        else if (test_en) begin
             if (t2<TEST_ROWS-1) begin
                 t2 = t2 + 1;                
                 classify_x_en = 1;
@@ -591,14 +526,8 @@ module som
             end
             test_en = 0;
         end
-    end
-    
-    reg [LOG2_TEST_ROWS:0] correct_predictions = 0; // should take log2 of test rows
-    reg [LOG2_NUM_CLASSES:0] predictionY [TEST_ROWS-1:0];
-    reg [LOG2_TEST_ROWS:0] tot_predictions = 0;
-    
-    always @(posedge clk) begin
-        if (classify_x_en) begin
+        
+        else if (classify_x_en) begin
             distance_en = 1;
             distance_reset = 0;
             distance_X = testX[t2];
@@ -613,10 +542,8 @@ module som
                 min_distance_en = 1;
             end
         end
-    end
-    
-    always @(posedge clk) begin
-        if (bmu_en && test_mode) begin
+        
+        else if (bmu_en && test_mode) begin
             bmu[1] = minimum_distance_indices[min_distance_next_index-1][1];
             bmu[0] = minimum_distance_indices[min_distance_next_index-1][0];
             
