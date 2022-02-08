@@ -26,7 +26,7 @@ module gsom
         parameter TRAIN_ROWS = 900,
         parameter LOG2_TRAIN_ROWS = 10,
         parameter TEST_ROWS = 300,
-        parameter LOG2_TEST_ROWS = 10, 
+        parameter LOG2_TEST_ROWS = 10,
         
         parameter NUM_CLASSES = 2+1,
         parameter LOG2_NUM_CLASSES = 2,
@@ -44,7 +44,8 @@ module gsom
         parameter alpha=32'h3F666666 //0.9
 
     )(
-        input wire clk
+        input wire clk,
+        output wire completed
     );
     
     ///////////////////////////////////////////**************************init variables**************************/////////////////////////////////////////////////////
@@ -153,6 +154,8 @@ module gsom
     
     reg signed [LOG2_ROWS:0] new_node_idx_x [3:0];
     reg signed [LOG2_COLS:0] new_node_idx_y [3:0];
+    
+    integer file_dir, file_i, file_j;
     ///////////////////////////////////////////**************************read input**************************/////////////////////////////////////////////////////
     initial begin
         $readmemb("som_train_x.mem", trainX);
@@ -485,6 +488,7 @@ module gsom
     ///////////////////////////////////////////**************************init_arrays**************************/////////////////////////////////////////////////////
     always @(posedge clk) begin
         if (init_arrays) begin
+//            $display("init_arrays");
             for (i = 0; i < MAX_ROWS; i = i + 1) begin
                 for (j = 0; j < MAX_COLS; j = j + 1) begin
                     map[i][j] = { (LOG2_NODE_SIZE+1)*4{1'b1} }; // initialize all cells to -1
@@ -497,11 +501,10 @@ module gsom
             init_arrays = 0;
             init_gsom = 1;
         end
-    end
-    
     ///////////////////////////////////////////**************************init_gsom**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (init_gsom) begin
+
+        else if (init_gsom) begin
+//            $display("init_gsom");
             map[1][1][LOG2_NODE_SIZE:0] = node_count;
             node_list[node_count] = random_weights[node_count]; // Initialize random weight
             node_coords[node_count][0] = 1;
@@ -532,7 +535,8 @@ module gsom
             init_variables = 1;
         end
         
-        if (init_variables) begin
+        else if (init_variables) begin
+//            $display("init_variables");
             learning_rate = initial_learning_rate;
             
             // growth threshold            
@@ -550,14 +554,16 @@ module gsom
                 square = 1;
             end
         end
-        if (square && !mul_is_done) begin
+        else if (square && !mul_is_done) begin
+//            $display("square && !mul_is_done");
             mul_num1 = mul_num_out;
             //mul_num2 = 32'h3F800000; //1
             mul_num2 = mul_num_out; //1
             mul_en = 1;
             mul_reset = 0;
         end
-        if (square && mul_is_done && mul_en) begin
+        else if (square && mul_is_done && mul_en) begin
+//            $display("square && mul_is_done && mul_en");
             growth_threshold = mul_num_out;
             mul_en = 0;
             mul_reset = 1;
@@ -565,18 +571,18 @@ module gsom
             growing_iter_en = 1;
             square = 0;
         end
-    end
     
     ///////////////////////////////////////////**************************growing_smoothing_iter_en_init**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (fit_en && growing_iter_en) begin
+        else if (fit_en && growing_iter_en) begin
+//            $display("fit_en && growing_iter_en");
             current_learning_rate = learning_rate;
             iteration = -1;            
             next_iteration_en = 1;
             fit_en = 0;
         end
         
-        if (fit_en && smoothing_iter_en) begin
+        else if (fit_en && smoothing_iter_en) begin
+//            $display("fit_en && smoothing_iter_en");
             mul_num1 = learning_rate;
             mul_num2 = smooth_learning_factor;
             mul_en = 1;
@@ -590,11 +596,10 @@ module gsom
                 fit_en = 0;
             end
         end
-    end
     
     ///////////////////////////////////////////**************************growing_iterations**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (next_iteration_en && growing_iter_en) begin
+        else if (next_iteration_en && growing_iter_en) begin
+//            $display("next_iteration_en && growing_iter_en");
             if (iteration < GROWING_ITERATIONS) begin
                 iteration = iteration + 1;
 //                $display("iteration", iteration);
@@ -625,7 +630,8 @@ module gsom
         end
  
         // calculate learning rate
-        if (get_LR_en && growing_iter_en) begin
+        else if (get_LR_en && growing_iter_en) begin
+//            $display("get_LR_en && growing_iter_en");
             lr_reset = 0;
             lr_en = 1;
             if (lr_is_done) begin
@@ -638,16 +644,16 @@ module gsom
         end
         
         // grow network
-        if (grow_en) begin
+        else if (grow_en) begin
+//            $display("grow_en");
             grow_en = 0;
             t1 = -1;
             next_t1_en = 1;
         end
-    end
     
     ///////////////////////////////////////////**************************smoothing_iterations**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (next_iteration_en && smoothing_iter_en) begin
+        else if (next_iteration_en && smoothing_iter_en) begin
+//            $display("next_iteration_en && smoothing_iter_en");
             if (iteration < SMOOTHING_ITERATIONS) begin
                 iteration = iteration + 1;
 //                $display("iteration", iteration);
@@ -670,6 +676,7 @@ module gsom
                 
                 next_iteration_en = 0;
             end else begin
+                $display("smoothing iterations over");
                 iteration = -1;
                 write_en = 1;
                 //is_completed = 1;
@@ -678,7 +685,8 @@ module gsom
         end       
         
         // calculate learning rate
-        if (get_LR_en && smoothing_iter_en) begin
+        else if (get_LR_en && smoothing_iter_en) begin
+//            $display("get_LR_en && smoothing_iter_en");
             lr_en = 1;
             lr_reset = 0;
             if (lr_is_done) begin
@@ -690,15 +698,15 @@ module gsom
             end
         end        
         
-        if (smooth_en) begin
+        else if (smooth_en) begin
+//            $display("smooth_en");
             smooth_en = 0;
             t1 = -1;
             next_t1_en = 1;
         end
-    end   
     
-    always @(posedge clk) begin
-        if (next_t1_en) begin
+        else if (next_t1_en) begin
+//            $display("next_t1_en");
             if (t1 < TRAIN_ROWS-1) begin
                 t1 = t1 + 1;   
                 $display("iter %d t1 %d node count %d", iteration, t1, node_count);
@@ -709,11 +717,9 @@ module gsom
             end
             next_t1_en = 0;
         end
-    end
-    
     ///////////////////////////////////////////**************************Find_BMU**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (dist_enable) begin
+        else if (dist_enable) begin
+//        $display("dist_enable");
             distance_X=trainX[t1];
             distance_reset=0;
             distance_en=1;
@@ -727,10 +733,9 @@ module gsom
                 min_distance_en = 1;
             end
         end
-    end
     
-    always @(posedge clk) begin
-        if (min_distance_en) begin
+        else if (min_distance_en) begin
+//            $display("min_distance_en");
             comp_in_1 = min_distance;
             comp_in_2 = distance_out[node_count_i];
             comp_reset = 0;
@@ -761,10 +766,9 @@ module gsom
                 end
             end
         end
-    end
     
-    always @(posedge clk) begin
-        if (bmu_en && !test_mode) begin   
+        else if (bmu_en && !test_mode) begin   
+//            $display("bmu_en && !test_mode");
             bmu[1] = minimum_distance_indices[min_distance_next_index-1][1];
             bmu[0] = minimum_distance_indices[min_distance_next_index-1][0];
             rmu = minimum_distance_1D_indices[0];
@@ -775,11 +779,10 @@ module gsom
                 next_t1_en = 1;
             bmu_en=0;
         end
-    end
-    
-    ///////////////////////////////////////////**************************init_neigh_search_en**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin    
-        if (init_neigh_search_en) begin
+        ///////////////////////////////////////////**************************init_neigh_search_en**************************/////////////////////////////////////////////////////
+  
+        else if (init_neigh_search_en) begin
+//            $display("init_neigh_search_en");
             bmu_x = bmu[1]; bmu_y = bmu[0];  
             bmu_i = bmu_x-radius;            
             bmu_j = bmu_y-radius;
@@ -787,15 +790,14 @@ module gsom
             nb_search_en=1;
 //            $display("bmu %d %d", bmu[1], bmu[0]);
         end
-    end
-    
-    always @(posedge clk) begin    
-        if (nb_search_en && !update_en && !update_neighbour_en) begin  
+     
+        else if (nb_search_en && !update_en && !update_neighbour_en) begin  
+//            $display("nb_search_en && !update_en && !update_neighbour_en");
             man_dist = (bmu_x-bmu_i) >= 0 ? (bmu_x-bmu_i) : (bmu_i-bmu_x);
             man_dist = man_dist + ((bmu_y - bmu_j)>= 0 ? (bmu_y - bmu_j) : (bmu_j - bmu_y));   
             
             if (man_dist == 0) begin
-                //$display("bmu_weight_update %d %d", bmu_i, bmu_j);
+//                $display("bmu_weight_update %d %d", bmu_i, bmu_j);
                 update_in_1 = node_list[rmu];
                 update_in_2 = trainX[t1];
                 update_learning_rate = current_learning_rate;
@@ -809,7 +811,7 @@ module gsom
                 node_error_add_en = 1;  
 
             end else if (man_dist <= radius) begin
-                //$display("neighbour_update %d %d", bmu_i, bmu_j);
+//                $display("neighbour_update %d %d", bmu_i, bmu_j);
                 update_neighbour_in_1 = node_list[rmu];
                 update_neighbour_in_2 = node_list[rmu_i];
                 update_neighbour_learning_rate = current_learning_rate;
@@ -821,27 +823,37 @@ module gsom
             end
             nb_search_en = 0;
         end
-    end
     
-    always @(posedge clk) begin
-        if ((update_done == {DIM{1'b1}}) || (update_neighbour_done == {DIM{1'b1}}) || not_man_dist_en) begin
+        else if ((update_done == {DIM{1'b1}}) || (update_neighbour_done == {DIM{1'b1}}) || not_man_dist_en) begin
+            // $display("(update_done == {DIM{1'b1}}) || (update_neighbour_done == {DIM{1'b1}}) || not_man_dist_en");
             if (update_done == {DIM{1'b1}} && node_error_add_done) begin
+                $display("update_done && node_error_add_done");
                 node_error_add_en = 0;
                 node_error_add_reset = 1;
                 node_errors[rmu] = node_error_add_out;
                 
-                update_en=0;
-                update_reset=1;
+                update_en = 0;
+                update_reset = 1;
                 node_list[rmu] = update_out;
-                if (growing_iter_en)
+                
+                if (growing_iter_en) begin
+//                    $display("growing_iter_en");
                     adjust_weights_en = 1;
+                    not_man_dist_en = 0;
+                end else begin 
+                    not_man_dist_en = 1;
+                end
             end 
-            if (update_neighbour_done == {DIM{1'b1}}) begin
+            else if (update_neighbour_done == {DIM{1'b1}}) begin
+                
                 node_list[rmu_i] = update_neighbour_out;
                 update_neighbour_en=0;
                 update_neighbour_reset=1;
+                not_man_dist_en=1;
+                $display("update_neighbour_done %b %b %b %b", !adjust_weights_en , !update_en , !update_neighbour_en, not_man_dist_en);
             end      
-            if (!adjust_weights_en && !update_en && !update_neighbour_en) begin
+            else if (!adjust_weights_en && !update_en && !update_neighbour_en) begin
+//                $display("Next node");
                 bmu_j = bmu_j + 1;
                 if (bmu_j == bmu_y+radius+1) begin
                     bmu_j = bmu_y-radius;                
@@ -871,11 +883,10 @@ module gsom
                 end
             end
         end
-    end
-    
-    ///////////////////////////////////////////**************************adjust_weights**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (adjust_weights_en) begin
+        ///////////////////////////////////////////**************************adjust_weights**************************/////////////////////////////////////////////////////
+
+        else if (adjust_weights_en) begin
+            $display("adjust_weights_en");
             comp_reset = 0;
             comp_en = 1;
             comp_in_1 = node_errors[rmu];
@@ -903,28 +914,30 @@ module gsom
                     spreadable[3] = spreadable_idx[3]==-1 ? 0 : 1;
                         
                     if (spreadable == {4{1'b1}}) begin
-//                        $display("spreadable");
+                        $display("spreadable");
                         spread_weighs_en=1;
                     end else begin      
-//                        $display("grow_nodes_en");   
+                        $display("grow_nodes_en");   
                         grow_nodes_en=1;
                         grow_done = spreadable;
                     end
                     
                 end else begin
                     not_man_dist_en = 1;
-//                    $display("GT is bigger");   
+                    $display("GT is bigger");   
                 end
                 adjust_weights_en = 0;
             end 
         end
         
-        if (spread_weighs_en) begin
+        else if (spread_weighs_en) begin
+            $display("spread_weighs_en");
             node_errors[rmu] = growth_threshold;
             node_errors[rmu][30:23] = growth_threshold[30:23] - 1; // divide by 2 => exp-1
             update_error_en = 1;
             update_error_reset = 0;
             if (update_error_done == {4{1'b1}}) begin
+                $display("%h %h %h %h", updated_error[0], updated_error[1], updated_error[2], updated_error[3]);
                 update_error_en = 0;
                 update_error_reset = 1;
                 node_errors[spreadable_idx[0]] = updated_error[0];
@@ -936,12 +949,10 @@ module gsom
                 spread_weighs_en = 0;   
             end
         end
-    end
+        ///////////////////////////////////////////**************************grow_up**************************/////////////////////////////////////////////////////
 
-    ///////////////////////////////////////////**************************grow_up**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (grow_nodes_en && !spreadable[0]) begin
-//            $display("new up node %d %d", upx, upy);
+        else if (grow_nodes_en && !spreadable[0]) begin
+            $display("new up node %d %d", upx, upy);
             new_node_idx_x[0] = upx;
             new_node_idx_y[0] = upy;
             u_idx = is_in_map(upx, upy+1);
@@ -984,12 +995,10 @@ module gsom
             end            
             spreadable[0] = 1;
         end 
-    end
-    
-    ///////////////////////////////////////////**************************grow_right**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (grow_nodes_en && !spreadable[1]) begin
-//            $display("new right node %d %d", rightx, righty);
+        ///////////////////////////////////////////**************************grow_right**************************/////////////////////////////////////////////////////
+
+        else if (grow_nodes_en && !spreadable[1]) begin
+            $display("new right node %d %d", rightx, righty);
             new_node_idx_x[1] = rightx;
             new_node_idx_y[1] = righty;
             r_idx = is_in_map(rightx+1, righty);
@@ -1028,12 +1037,10 @@ module gsom
             end
             spreadable[1] = 1;
         end 
-    end
-    
-    ///////////////////////////////////////////**************************grow_bottom**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (grow_nodes_en && !spreadable[2]) begin
-//            $display("new bottom node %d %d", bottomx, bottomy);
+        ///////////////////////////////////////////**************************grow_bottom**************************/////////////////////////////////////////////////////
+
+        else if (grow_nodes_en && !spreadable[2]) begin
+            $display("new bottom node %d %d", bottomx, bottomy);
             
             new_node_idx_x[2] = bottomx;
             new_node_idx_y[2] = bottomy;
@@ -1073,12 +1080,10 @@ module gsom
             end
             spreadable[2] = 1;
         end 
-    end
-    
-    ///////////////////////////////////////////**************************grow_left**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (grow_nodes_en && !spreadable[3]) begin
-//            $display("new left node %d %d", leftx, lefty);
+        ///////////////////////////////////////////**************************grow_left**************************/////////////////////////////////////////////////////
+
+        else if (grow_nodes_en && !spreadable[3]) begin
+            $display("new left node %d %d", leftx, lefty);
             new_node_idx_x[3] = leftx;
             new_node_idx_y[3] = lefty;
             l_idx = is_in_map(leftx-1, lefty);
@@ -1118,41 +1123,75 @@ module gsom
             end
             spreadable[3] = 1;
         end
-    end
     
-    ///////////////////////////////////////////**************************inserted_nodes**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin 
         // insert new node
-        for (i=1;i<=4;i=i+1) begin
-//            if (new_node_in_middle_en[i*DIM-1 -:DIM]=={4{1'b1}}) $display("in_middle %d", new_node_in_middle_is_done[i*DIM-1 -:DIM]);
-//            if (new_node_on_one_side_en[i*DIM-1 -:DIM]=={4{1'b1}}) $display("on_one_side %d", new_node_on_one_side_is_done[i*DIM-1 -:DIM]);
-            
-            if (new_node_in_middle_is_done[i*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[i-1]) begin
-                $display(new_node_in_middle_en);
-                new_node_in_middle_en[i*DIM-1 -:DIM] = 0;
-                new_node_in_middle_reset[i*DIM-1 -:DIM] = {DIM{1'b1}};
-                insert_new_node(new_node_idx_x[i-1], new_node_idx_y[i-1], new_node_in_middle_weight[DIGIT_DIM*DIM*i-1 -:DIGIT_DIM*DIM]);
-                grow_done[i-1] = 1;
-                $display("inserted in_middle %d %d %d", i-1, new_node_idx_x[i-1], new_node_idx_y[i-1]);
-            end
-            if (new_node_on_one_side_is_done[i*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[i-1]) begin
-                $display(new_node_on_one_side_en);
-                new_node_on_one_side_en[i*DIM-1 -:DIM] = 0;
-                new_node_on_one_side_reset[i*DIM-1 -:DIM] = {DIM{1'b1}};
-                insert_new_node(new_node_idx_x[i-1], new_node_idx_y[i-1], new_node_on_one_side_weight[DIGIT_DIM*DIM*i-1 -:DIGIT_DIM*DIM]);
-                grow_done[i-1] = 1;
-                $display("inserted on_one_side %d %d %d", i-1, new_node_idx_x[i-1], new_node_idx_y[i-1]);
-            end
+        else if (new_node_in_middle_is_done[1*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[1-1]) begin
+            new_node_in_middle_en[1*DIM-1 -:DIM] = 0;
+            new_node_in_middle_reset[1*DIM-1 -:DIM] = {DIM{1'b1}};
+            insert_new_node(new_node_idx_x[1-1], new_node_idx_y[1-1], new_node_in_middle_weight[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM]);
+            grow_done[1-1] = 1;
+            $display("new_node_in_middle_weight %d %h", node_count, new_node_in_middle_weight[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM]);
+        
+        end else if (new_node_on_one_side_is_done[1*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[1-1]) begin
+            new_node_on_one_side_en[1*DIM-1 -:DIM] = 0;
+            new_node_on_one_side_reset[1*DIM-1 -:DIM] = {DIM{1'b1}};
+            insert_new_node(new_node_idx_x[1-1], new_node_idx_y[1-1], new_node_on_one_side_weight[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM]);
+            grow_done[1-1] = 1;
+            $display("new_node_on_one_side_weight %d %h", node_count, new_node_on_one_side_weight[DIGIT_DIM*DIM*1-1 -:DIGIT_DIM*DIM]);
+        
+        end else if (new_node_in_middle_is_done[2*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[2-1]) begin
+            new_node_in_middle_en[2*DIM-1 -:DIM] = 0;
+            new_node_in_middle_reset[2*DIM-1 -:DIM] = {DIM{1'b1}};
+            insert_new_node(new_node_idx_x[2-1], new_node_idx_y[2-1], new_node_in_middle_weight[DIGIT_DIM*DIM*2-1 -:DIGIT_DIM*DIM]);
+            grow_done[2-1] = 1;
+            $display("new_node_in_middle_weight %d %h", node_count, new_node_in_middle_weight[DIGIT_DIM*DIM*2-1 -:DIGIT_DIM*DIM]);
+        
+        end else if (new_node_on_one_side_is_done[2*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[2-1]) begin
+//            $display(new_node_on_one_side_en);
+            new_node_on_one_side_en[2*DIM-1 -:DIM] = 0;
+            new_node_on_one_side_reset[2*DIM-1 -:DIM] = {DIM{1'b1}};
+            insert_new_node(new_node_idx_x[2-1], new_node_idx_y[2-1], new_node_on_one_side_weight[DIGIT_DIM*DIM*2-1 -:DIGIT_DIM*DIM]);
+            grow_done[2-1] = 1;
+            $display("new_node_on_one_side_weight %d %h", node_count, new_node_on_one_side_weight[DIGIT_DIM*DIM*2-1 -:DIGIT_DIM*DIM]);
+        
+        end else if (new_node_in_middle_is_done[3*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[3-1]) begin
+            new_node_in_middle_en[3*DIM-1 -:DIM] = 0;
+            new_node_in_middle_reset[3*DIM-1 -:DIM] = {DIM{1'b1}};
+            insert_new_node(new_node_idx_x[3-1], new_node_idx_y[3-1], new_node_in_middle_weight[DIGIT_DIM*DIM*3-1 -:DIGIT_DIM*DIM]);
+            grow_done[3-1] = 1;
+            $display("new_node_in_middle_weight %d %h", node_count, new_node_in_middle_weight[DIGIT_DIM*DIM*3-1 -:DIGIT_DIM*DIM]);
+        
+        end else if (new_node_on_one_side_is_done[3*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[3-1]) begin
+            new_node_on_one_side_en[3*DIM-1 -:DIM] = 0;
+            new_node_on_one_side_reset[3*DIM-1 -:DIM] = {DIM{1'b1}};
+            insert_new_node(new_node_idx_x[3-1], new_node_idx_y[3-1], new_node_on_one_side_weight[DIGIT_DIM*DIM*3-1 -:DIGIT_DIM*DIM]);
+            grow_done[3-1] = 1;
+            $display("new_node_on_one_side_weight %d %h", node_count, new_node_on_one_side_weight[DIGIT_DIM*DIM*3-1 -:DIGIT_DIM*DIM]);
+        
+        end else if (new_node_in_middle_is_done[4*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[4-1]) begin
+            new_node_in_middle_en[4*DIM-1 -:DIM] = 0;
+            new_node_in_middle_reset[4*DIM-1 -:DIM] = {DIM{1'b1}};
+            insert_new_node(new_node_idx_x[4-1], new_node_idx_y[4-1], new_node_in_middle_weight[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM]);
+            grow_done[4-1] = 1;
+            $display("new_node_in_middle_weight %d %h", node_count, new_node_in_middle_weight[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM]);
+        
+        end else if (new_node_on_one_side_is_done[4*DIM-1 -:DIM]=={DIM{1'b1}} && !grow_done[4-1]) begin
+            new_node_on_one_side_en[4*DIM-1 -:DIM] = 0;
+            new_node_on_one_side_reset[4*DIM-1 -:DIM] = {DIM{1'b1}};
+            insert_new_node(new_node_idx_x[4-1], new_node_idx_y[4-1], new_node_on_one_side_weight[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM]);
+            grow_done[4-1] = 1;
+            $display("new_node_on_one_side_weight %d %h", node_count, new_node_on_one_side_weight[DIGIT_DIM*DIM*4-1 -:DIGIT_DIM*DIM]);
         end
-        if (grow_done==4'b1111 && !node_count_adder_en) begin
+        
+        else if (grow_done==4'b1111 && !node_count_adder_en) begin
+            $display("node_count weight %d %h", node_count, node_list[node_count-1]);
             not_man_dist_en = 1;
             grow_nodes_en = 0;
+            grow_done = 0;
         end
-    end
-    
-    ///////////////////////////////////////////**************************increment_node_count**************************/////////////////////////////////////////////////////
-    always @(posedge clk) begin
-        if (node_count_adder_en) begin
+        ///////////////////////////////////////////**************************increment_node_count**************************/////////////////////////////////////////////////////
+
+        else if (node_count_adder_en) begin
             nca_num1 = node_count_ieee754;
             nca_num2 = 32'h3F800000; // 1
             nca_en = 1;
@@ -1164,12 +1203,11 @@ module gsom
                 node_count_adder_en = 0;
             end
         end
-    end
-    ///////////////////////////////////////////**************************write_weights**************************/////////////////////////////////////////////////////
-    integer file_dir, file_i, file_j;    
-    always @(posedge clk) begin
-        if (write_en) begin
-            file_dir = $fopen("/home/mad/Documents/Projects/fpga-isom/gsom/weight_out.data", "w");
+        ///////////////////////////////////////////**************************write_weights**************************/////////////////////////////////////////////////////
+
+        else if (write_en) begin
+            $display("writing weights to file");
+            file_dir = $fopen("/home/aari/Projects/Vivado/fpga-som/gsom/weight_out.data", "w");
             for (file_i=0; file_i<=node_count-1; file_i=file_i+1) begin
                 for (file_j=DIM*DIGIT_DIM-1; file_j>=0; file_j=file_j-1) begin
                     $fwriteb(file_dir, node_list[file_i][file_j]);
@@ -1177,7 +1215,8 @@ module gsom
                 $fwrite(file_dir, "\n");
             end
             
-            file_dir = $fopen("/home/mad/Documents/Projects/fpga-isom/gsom/coords.data", "w");
+            $display("writing coords to file");
+            file_dir = $fopen("/home/aari/Projects/Vivado/fpga-som/gsom/coords.data", "w");
             for (file_i=0; file_i<=node_count-1; file_i=file_i+1) begin
                 $fwriteb(file_dir, node_coords[file_i][1]);
                 $fwrite(file_dir, " ");
@@ -1186,9 +1225,10 @@ module gsom
             end
             
             #10 $fclose(file_dir);            
-            is_completed = 1;   
-            $finish;
+            is_completed = 1;
         end
     end
+    
+    assign completed = is_completed;
     
 endmodule

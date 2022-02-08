@@ -62,61 +62,58 @@ fpa_multiplier multiply(
     .is_done(mul_done)
 );
 
-always @(posedge reset) begin
-    done = 0;
-    en_1=1;
+
+always @(posedge clk or posedge reset) begin
+
+    if (reset) begin 
+        done = 0;
+        en_1=1;
+    end else begin 
+        if (en && en_1) begin
+            add_reset = 0;
+            add_in_1 = weight;
+            add_in_2 = train_row;
+            add_in_1[31] = 1; // indicate subtraction
+            en_add = 1; // on the adder module
+            
+            en_1=0; // off this block
+            en_2=1; // on next block
+        end
+        
+        else if (en && en_2 && add_done) begin
+            en_add=0; // off adder module
+            add_reset = 1;
+            
+            mul_reset = 0;
+            mul_in_1 = add_out;
+            mul_in_2 = alpha;
+            en_mul = 1; // on the adder module
+            
+            en_2=0; // off this block
+            en_3=1; // on next block
+        end
+        
+        else if (en && en_3 && mul_done) begin
+            en_mul=0; // off multi module
+            mul_reset = 1;
+            
+            add_reset = 0;
+            add_in_1 = weight;
+            add_in_2 = mul_out;
+            en_add = 1; // on the adder module
+            
+            en_3=0; // off this block
+            en_4=1; // on next block
+        end
+        else if (en && en_4 && add_done) begin
+            en_add = 0;
+            add_reset=1;
+            done=1;
+            en_4=0;
+        end
+    end
+    
 end
 
-always @(posedge clk) begin
-    if (en && en_1) begin
-        add_reset = 0;
-        add_in_1 = weight;
-        add_in_2 = train_row;
-        add_in_1[31] = 1; // indicate subtraction
-        en_add = 1; // on the adder module
-        
-        en_1=0; // off this block
-        en_2=1; // on next block
-    end
-end
-
-always @(posedge clk) begin
-    if (en && en_2 && add_done) begin
-        en_add=0; // off adder module
-        add_reset = 1;
-        
-        mul_reset = 0;
-        mul_in_1 = add_out;
-        mul_in_2 = alpha;
-        en_mul = 1; // on the adder module
-        
-        en_2=0; // off this block
-        en_3=1; // on next block
-    end
-end
-
-always @(posedge clk) begin
-    if (en && en_3 && mul_done) begin
-        en_mul=0; // off multi module
-        mul_reset = 1;
-        
-        add_reset = 0;
-        add_in_1 = weight;
-        add_in_2 = mul_out;
-        en_add = 1; // on the adder module
-        
-        en_3=0; // off this block
-        en_4=1; // on next block
-    end
-end
-
-always @(posedge clk) begin
-    if (en && en_4 && add_done) begin
-        en_add = 0;
-        add_reset=1;
-        done=1;
-        en_4=0;
-    end
-end
 
 endmodule

@@ -92,11 +92,6 @@ reg [DIGIT_DIM-1:0] out;
 reg done = 0;
 reg init = 1;
 
-always @(posedge reset) begin
-    done = 0;
-    init = 1;
-end
-
 reg step_1 = 0;
 reg step_2 = 0;
 reg step_3 = 0;
@@ -104,8 +99,12 @@ reg step_4 = 0;
 
 reg signed [23:0] shift_count;
 
-always @(posedge clk) begin
-    if (en && init) begin
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
+        done = 0;
+        init = 1;
+        
+    end else if (en && init) begin
         /*************
         2^(n/8 + 2)
         **************/  
@@ -130,9 +129,7 @@ always @(posedge clk) begin
         step_4 = 1;  
 //        step_1 = 1;  
         
-    end
-    
-    if (en && step_1 && add_is_done) begin
+    end else if (en && step_1 && add_is_done) begin
         
         /**************************************
               R
@@ -151,10 +148,9 @@ always @(posedge clk) begin
         add1_reset = 0;
         
         step_1 = 0; 
-        step_2 = 1;      
-    end
-    
-    if (step_2 && add1_is_done) begin
+        step_2 = 1;   
+           
+    end else if (step_2 && add1_is_done) begin
 //        $display("2 %h", add1_num_out);
         add1_en = 0;
         add1_reset = 1;   
@@ -175,9 +171,8 @@ always @(posedge clk) begin
         
         step_2 = 0;
         step_3 = 1;
-    end
-    
-    if (step_3 && add_is_done && mul_is_done) begin
+        
+    end else if (step_3 && add_is_done && mul_is_done) begin
 //        $display("3 %h", mul_num_out);
 //        $display("4 %h", add_num_out);
         
@@ -194,20 +189,7 @@ always @(posedge clk) begin
         
         step_3 = 0;
         step_4 = 1;
-    end
-    
-//    if (step_4 && mul1_is_done) begin
-//        $display("4 %h", mul1_num_out);
-//        mul1_en = 0;
-//        mul1_reset = 1;
-        
-//        done = 1;
-//        out = mul1_num_out;
-        
-//        step_4 = 0;
-//    end
-    
-    if (step_4 && mul_is_done) begin
+    end else if (step_4 && mul_is_done) begin
 //        $display("4 %h", mul_num_out);
         mul_en = 0;
         mul_reset = 1;

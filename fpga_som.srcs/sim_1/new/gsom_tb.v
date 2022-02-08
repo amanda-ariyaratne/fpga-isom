@@ -8,7 +8,8 @@ module gsom_tb();
     reg en = 0;
     
     gsom uut(
-        .clk(clk)
+        .clk(clk),
+        .completed(completed)
     );
     
     reg [32:0] i=0;

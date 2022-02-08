@@ -51,35 +51,37 @@ fpa_multiplier square_unit(
     .is_done(square_done)
 );
 
-always @(posedge clk) begin 
-    if (en && init) begin  
-        sub_in_1 = num1;
-        sub_in_2 = num2;
-        sub_in_2[DIGIT_DIM-1] = ~sub_in_2[DIGIT_DIM-1]; // flip the sign bit
-        sub_en=1;
-        sub_reset=0;
-        init=0;
-    end
-    
-    if (subtraction_done && !squrae_en) begin
-        sub_en=0;
-        sub_reset=1;
-        
-        square_in = subtraction_out;
-        squrae_en=1;
-        squrae_reset=0;
-    end
-    
-    if (square_done) begin 
-        done = 1;    
-        squrae_en=0;        
-        squrae_reset=1; 
-    end
-end
+always @(posedge clk or posedge reset) begin 
 
-always @(posedge reset) begin
-    done = 0;
-    init=1;
+    if (reset) begin 
+        done = 0;
+        init=1;
+    end else begin 
+        if (en && init) begin  
+            sub_in_1 = num1;
+            sub_in_2 = num2;
+            sub_in_2[DIGIT_DIM-1] = ~sub_in_2[DIGIT_DIM-1]; // flip the sign bit
+            sub_en=1;
+            sub_reset=0;
+            init=0;
+        end
+        
+        if (subtraction_done && !squrae_en) begin
+            sub_en=0;
+            sub_reset=1;
+            
+            square_in = subtraction_out;
+            squrae_en=1;
+            squrae_reset=0;
+        end
+        
+        if (square_done) begin 
+            done = 1;    
+            squrae_en=0;        
+            squrae_reset=1; 
+        end
+    end
+        
 end
 
 assign is_done = done;
